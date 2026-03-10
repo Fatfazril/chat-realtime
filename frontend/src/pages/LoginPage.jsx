@@ -1,14 +1,30 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Simulate login
-    navigate('/dashboard');
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      await login(username, password);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Failed to sign in');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,14 +66,21 @@ export default function LoginPage() {
 
               {/* Input Groups */}
               <form className="flex flex-col gap-5" onSubmit={handleLogin}>
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm border border-red-200 dark:border-red-500/20">
+                    {error}
+                  </div>
+                )}
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Email Address</label>
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">Username</label>
                   <div className="relative">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary/40">mail</span>
+                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary/40">person</span>
                     <input 
                       className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-primary/10 border border-slate-200 dark:border-primary/20 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-primary/30" 
-                      placeholder="name@example.com" 
-                      type="email" 
+                      placeholder="johndoe" 
+                      type="text" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       required 
                     />
                   </div>
@@ -74,6 +97,8 @@ export default function LoginPage() {
                       className="w-full pl-12 pr-12 py-3.5 bg-slate-50 dark:bg-primary/10 border border-slate-200 dark:border-primary/20 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-primary/30" 
                       placeholder="••••••••" 
                       type={showPassword ? "text" : "password"} 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required 
                     />
                     <button 
@@ -86,8 +111,12 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <button type="submit" className="mt-2 w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 transition-all active:scale-[0.98]">
-                  Sign In
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="mt-2 w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/25 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? 'Signing In...' : 'Sign In'}
                 </button>
               </form>
 

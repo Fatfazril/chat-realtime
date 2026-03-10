@@ -1,14 +1,32 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function RegisterPage() {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
   const navigate = useNavigate();
+  const { register } = useAuth();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    // Simulate registration
-    navigate('/dashboard');
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      await register(username, email, password);
+      // Backend automatically logs user in upon registration
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Failed to create account');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,6 +59,12 @@ export default function RegisterPage() {
 
               {/* Registration Form */}
               <form className="space-y-5" onSubmit={handleRegister}>
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm border border-red-200 dark:border-red-500/20">
+                    {error}
+                  </div>
+                )}
+                
                 <div className="space-y-2">
                   <label className="block text-slate-700 dark:text-slate-200 text-sm font-semibold ml-1">Username</label>
                   <div className="relative">
@@ -49,6 +73,8 @@ export default function RegisterPage() {
                       className="w-full bg-slate-100 dark:bg-primary/10 border border-slate-200 dark:border-primary/20 rounded-xl h-14 pl-12 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500" 
                       placeholder="johndoe" 
                       type="text" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       required 
                     />
                   </div>
@@ -62,6 +88,8 @@ export default function RegisterPage() {
                       className="w-full bg-slate-100 dark:bg-primary/10 border border-slate-200 dark:border-primary/20 rounded-xl h-14 pl-12 pr-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500" 
                       placeholder="name@example.com" 
                       type="email" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       required 
                     />
                   </div>
@@ -75,6 +103,8 @@ export default function RegisterPage() {
                       className="w-full bg-slate-100 dark:bg-primary/10 border border-slate-200 dark:border-primary/20 rounded-xl h-14 pl-12 pr-14 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500" 
                       placeholder="••••••••" 
                       type={showPassword ? "text" : "password"} 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       required 
                     />
                     <button 
@@ -88,8 +118,12 @@ export default function RegisterPage() {
                   <p className="text-xs text-slate-500 mt-1 ml-1">Must be at least 8 characters long.</p>
                 </div>
 
-                <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] mt-4">
-                  Create Account
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] mt-4 disabled:opacity-70 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
                 </button>
               </form>
 
