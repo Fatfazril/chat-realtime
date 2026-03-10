@@ -13,6 +13,20 @@ A full-stack realtime chat application built with **Node.js**, **Express**, **So
 - **Read Receipts** — Track who has read each message
 - **Online Presence** — Live online/offline status via Redis SET
 - **Horizontal Scaling** — Redis Pub/Sub enables multi-instance deployment
+- **API Documentation** — Fully documented with **Swagger UI** and **Postman Collection**
+- **Unit Testing** — Jest/Supertest configured for endpoint testing
+
+## 💻 UI Showcase
+
+Here are some highlights of the custom frontend UI built using Tailwind and React:
+
+### Authentication Pages
+A modern, dark-mode native login/registration split layout to handle secure access securely.
+> *To view: Start the frontend server and navigate to `http://localhost:5173/login`*
+
+### Nexus Chat Dashboard
+The core workspace experience featuring floating sidebars, direct messages, rooms, and live online presence pulse animations.
+> *To view: Login and click the Workspace (bolt icon) in the sidebar!*
 
 ## 📁 Project Structure
 
@@ -86,9 +100,26 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`.
+The frontend will be available at `http://localhost:5173` (or port 5174 based on Vite allocation).
 
-## 📡 API Endpoints
+## 📡 API Documentation & Testing
+
+### Swagger UI
+The backend is internally documented with Swagger. Once the backend server is running (`npm run dev`), simply visit:
+**👉 `http://localhost:3400/api-docs`**
+
+### Postman Collection
+A pre-configured Postman Collection is available in the repository which includes requests and sample payloads for all major endpoints.
+- **Import Location**: `backend/docs/postman_collection.json`
+
+### Unit Testing
+The backend routes and controllers are bundled with Jest testing to validate endpoints natively.
+```bash
+cd backend
+npm test
+```
+
+## 🛠️ API Endpoints
 
 ### Auth (`/api/auth`)
 

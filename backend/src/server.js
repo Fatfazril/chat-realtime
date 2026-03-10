@@ -22,6 +22,11 @@ const server = http.createServer(app);
 app.use(cors());
 app.use(express.json());
 
+// --------------- Swagger Documentation ---------------
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('../swagger.json');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 // --------------- API Routes ---------------
 app.get('/', (req, res) => {
     res.json({
