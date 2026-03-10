@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import RoomsPage from './pages/RoomsPage'
 import MessagesPage from './pages/MessagesPage'
+import NexusChatPage from './pages/NexusChatPage'
 
 function DashboardPage() {
   return (
@@ -79,6 +80,9 @@ function App() {
       <Routes>
         {/* Messages page uses its own chat layout (sidebar + chat area) */}
         <Route path="/messages" element={<MessagesPage />} />
+        
+        {/* New Nexus Workspace layout */}
+        <Route path="/nexus" element={<NexusChatPage />} />
 
         {/* All other pages use the AppLayout with sidebar nav */}
         <Route element={<AppLayout />}>

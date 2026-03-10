@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
 @keyframes subtle-pulse {
   0%, 100% {
     transform: scale(1);
@@ -41,3 +44,18 @@
   background-position: center;
   background-repeat: no-repeat;
 }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #2c2348; border-radius: 10px; }
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.15); }
+}
+.animate-status-pulse { animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(91, 43, 238, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(91, 43, 238, 0.4); }
+}
+.active-channel-glow { animation: glow-pulse 3s infinite; }
