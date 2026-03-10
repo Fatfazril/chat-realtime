@@ -4,6 +4,8 @@ import AppLayout from './components/AppLayout'
 import RoomsPage from './pages/RoomsPage'
 import MessagesPage from './pages/MessagesPage'
 import NexusChatPage from './pages/NexusChatPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 
 function DashboardPage() {
   return (
@@ -78,6 +80,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Auth Pages */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
         {/* Messages page uses its own chat layout (sidebar + chat area) */}
         <Route path="/messages" element={<MessagesPage />} />
         
@@ -91,8 +97,8 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
-        {/* Default redirect to rooms */}
-        <Route path="*" element={<Navigate to="/rooms" replace />} />
+        {/* Default redirect to login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   )
