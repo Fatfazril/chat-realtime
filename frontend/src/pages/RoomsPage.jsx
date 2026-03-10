@@ -1,44 +1,36 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import RoomCard from '../components/RoomCard'
 import CreateRoomForm from '../components/CreateRoomForm'
 
-const publicRooms = [
-  {
-    id: 1,
-    name: 'Frontend Wizards',
-    icon: 'code',
-    description: 'A community for React, Vue and Tailwind CSS enthusiasts to share snippets and tips.',
-    members: '1.2k',
-    badge: 'Active',
-  },
-  {
-    id: 2,
-    name: 'Lobby 42: Gaming',
-    icon: 'sports_esports',
-    description: 'Casual and competitive gaming hub for all platforms. Daily tournaments!',
-    members: '840',
-    badge: 'Public',
-  },
-  {
-    id: 3,
-    name: 'Design Critique',
-    icon: 'palette',
-    description: 'Share your UI/UX work and get constructive feedback from senior designers.',
-    members: '3.1k',
-    badge: 'Public',
-  },
-  {
-    id: 4,
-    name: 'AI & Future Tech',
-    icon: 'psychology',
-    description: 'Discussing LLMs, automation, and how technology is shaping our world today.',
-    members: '2.5k',
-    badge: 'Hot',
-  },
-]
-
 function RoomsPage() {
   const [activeFilter, setActiveFilter] = useState('trending')
+  const [rooms, setRooms] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchRooms = async () => {
+    try {
+      setIsLoading(true)
+      const res = await fetch('/api/rooms', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setRooms(data.rooms || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch rooms', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchRooms()
+  }, [])
+
+  const handleRoomCreated = (newRoom) => {
+    setRooms(prev => [newRoom, ...prev])
+  }
 
   return (
     <div className="p-8 space-y-8">
@@ -82,16 +74,28 @@ function RoomsPage() {
           </div>
 
           {/* Room Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {publicRooms.map((room) => (
-              <RoomCard key={room.id} room={room} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center p-12">
+              <span className="material-symbols-outlined animate-spin text-4xl text-primary">progress_activity</span>
+            </div>
+          ) : rooms.length === 0 ? (
+            <div className="text-center p-12 bg-primary/5 rounded-2xl border border-primary/10">
+              <span className="material-symbols-outlined text-4xl text-slate-400 mb-2">forum</span>
+              <h3 className="text-lg font-bold">No rooms found</h3>
+              <p className="text-slate-500 text-sm">Be the first to create a public space!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {rooms.map((room) => (
+                <RoomCard key={room._id} room={room} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right: Create Room */}
         <div className="lg:col-span-4">
-          <CreateRoomForm />
+          <CreateRoomForm onRoomCreated={handleRoomCreated} />
         </div>
       </div>
     </div>

@@ -1,6 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 function RoomCard({ room }) {
+  const navigate = useNavigate()
+  const [isJoining, setIsJoining] = useState(false)
   const badgeStyles = {
     active: 'bg-green-500/20 text-green-500',
     public: 'bg-primary/20 text-primary',
@@ -8,6 +11,24 @@ function RoomCard({ room }) {
   }
 
   const badgeStyle = badgeStyles[room.badge?.toLowerCase()] || badgeStyles.public
+
+  const handleJoin = async () => {
+    try {
+      setIsJoining(true)
+      const res = await fetch(`/api/rooms/${room._id}/join`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      })
+      
+      // Even if already joined (error 400), we can just navigate to the room.
+      // Or we can parse the error. For now, navigate to it in Nexus workspace.
+      navigate(`/nexus?roomId=${room._id}`)
+    } catch (err) {
+      console.error('Failed to join room', err)
+    } finally {
+      setIsJoining(false)
+    }
+  }
 
   return (
     <div className="group bg-primary/5 border border-primary/10 rounded-xl p-5 hover:bg-primary/10 transition-all hover:border-primary/30">
@@ -36,10 +57,14 @@ function RoomCard({ room }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-slate-500 text-xs">
           <span className="material-symbols-outlined text-sm">groups</span>
-          <span>{room.members} members</span>
+          <span>{room.memberCount || 1} members</span>
         </div>
-        <button className="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-lg text-sm font-bold hover:shadow-lg hover:shadow-primary/30 active:scale-95 transition-all">
-          Join Room
+        <button 
+          onClick={handleJoin}
+          disabled={isJoining}
+          className="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-lg text-sm font-bold hover:shadow-lg hover:shadow-primary/30 active:scale-95 transition-all disabled:opacity-50"
+        >
+          {isJoining ? 'Joining...' : 'Join Room'}
         </button>
       </div>
     </div>

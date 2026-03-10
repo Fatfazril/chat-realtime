@@ -26,7 +26,14 @@ A modern, dark-mode native login/registration split layout to handle secure acce
 
 ### Nexus Chat Dashboard
 The core workspace experience featuring floating sidebars, direct messages, rooms, and live online presence pulse animations.
+- **Real-time Messaging**: Fully integrated with Socket.IO to send and receive live messages.
+- **Room Syncing**: Dynamically fetches active rooms and hydrates message history via REST API.
+- **Online Status Tracking**: Sidebar members list populates with live online/offline presence indicators.
 > *To view: Login and click the Workspace (bolt icon) in the sidebar!*
+
+### Dynamic Profile Page
+A dedicated page to manage your user settings, automatically fetching and saving profile (username, email) updates instantly to the backend API.
+> *To view: Start the frontend server, login, and navigate to the user profile in the sidebar.*
 
 ## 📁 Project Structure
 

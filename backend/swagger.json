@@ -129,6 +129,57 @@
           }
         }
       }
+    },
+    "/api/users/online": {
+      "get": {
+        "summary": "Get online users list",
+        "tags": ["Users"],
+        "responses": {
+          "200": { "description": "List of online users" }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "summary": "Get a specific user's details",
+        "tags": ["Users"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "User retrieved successfully" } }
+      },
+      "put": {
+        "summary": "Update user details",
+        "tags": ["Users"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "email": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "User updated successfully" } }
+      }
+    },
+    "/api/rooms/{id}/messages": {
+      "get": {
+        "summary": "Get message history for a room",
+        "tags": ["Messages"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "List of messages" } }
+      }
     }
   }
 }

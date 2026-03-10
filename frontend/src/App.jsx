@@ -6,6 +6,7 @@ import MessagesPage from './pages/MessagesPage'
 import NexusChatPage from './pages/NexusChatPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ProfilePage from './pages/ProfilePage'
 
 function DashboardPage() {
   return (
@@ -40,42 +41,6 @@ function DashboardPage() {
     </div>
   )
 }
-
-function ProfilePage() {
-  return (
-    <div className="p-8 space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-4xl font-black tracking-tight">Profile</h1>
-        <p className="text-slate-500">Manage your account settings and preferences.</p>
-      </div>
-      <div className="bg-primary/5 border border-primary/10 rounded-xl p-6 max-w-lg">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="size-16 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-3xl">person</span>
-          </div>
-          <div>
-            <h3 className="text-lg font-bold">Alex Rivers</h3>
-            <p className="text-sm text-slate-400">alex.rivers@email.com</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-slate-300">Username</label>
-            <input className="w-full bg-background-dark/50 border border-primary/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary" defaultValue="Alex Rivers" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-slate-300">Email</label>
-            <input className="w-full bg-background-dark/50 border border-primary/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary" defaultValue="alex.rivers@email.com" />
-          </div>
-          <button className="bg-primary text-white font-bold py-3 px-6 rounded-xl hover:shadow-lg hover:shadow-primary/30 active:scale-95 transition-all">
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function App() {
   return (
     <BrowserRouter>

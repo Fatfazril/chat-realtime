@@ -68,6 +68,51 @@
           }
         }
       ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Online Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/users/online", "host": ["{{baseUrl}}"], "path": ["api", "users", "online"] }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newname\",\n  \"email\": \"newemail@example.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/users/:id", "host": ["{{baseUrl}}"], "path": ["api", "users", ":id"], "variable": [{"key": "id", "value": "USER_ID"}] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Get Room Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{jwtToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/rooms/:roomId/messages", "host": ["{{baseUrl}}"], "path": ["api", "rooms", ":roomId", "messages"], "variable": [{"key": "roomId", "value": "ROOM_ID"}] }
+          }
+        }
+      ]
     }
   ],
   "variable": [

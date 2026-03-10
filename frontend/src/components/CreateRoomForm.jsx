@@ -1,14 +1,43 @@
 import React, { useState } from 'react'
 
-function CreateRoomForm() {
+function CreateRoomForm({ onRoomCreated }) {
   const [roomName, setRoomName] = useState('')
   const [description, setDescription] = useState('')
   const [privacy, setPrivacy] = useState('public')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // TODO: wire to backend API
-    console.log('Create room:', { roomName, description, privacy })
+    if (!roomName.trim()) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ name: roomName, description }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.errors?.[0] || 'Failed to create room')
+      }
+
+      setRoomName('')
+      setDescription('')
+      if (onRoomCreated) onRoomCreated(data.room)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -17,6 +46,12 @@ function CreateRoomForm() {
         <h2 className="text-xl font-bold mb-1">Create New Room</h2>
         <p className="text-sm text-slate-400">Launch a private or public community</p>
       </div>
+
+      {error && (
+        <div className="mb-4 bg-red-500/10 text-red-400 p-3 rounded-xl border border-red-500/20 text-sm">
+          {error}
+        </div>
+      )}
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         {/* Room Name */}
@@ -77,10 +112,11 @@ function CreateRoomForm() {
         {/* Submit */}
         <button
           type="submit"
-          className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 transition-all mt-6"
+          disabled={isLoading || !roomName.trim()}
+          className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all mt-6"
         >
-          <span className="material-symbols-outlined">add_circle</span>
-          Create Room
+          <span className="material-symbols-outlined">{isLoading ? 'hourglass_empty' : 'add_circle'}</span>
+          {isLoading ? 'Creating...' : 'Create Room'}
         </button>
       </form>
 
