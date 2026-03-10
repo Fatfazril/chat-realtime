@@ -1,4 +1,10 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
+
+const navClasses = ({ isActive }) =>
+  `p-2 rounded-lg transition-colors ${
+    isActive ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10'
+  }`;
 
 const NexusSidebar = () => (
   <aside className="w-16 hidden md:flex flex-col items-center py-6 gap-8 border-r border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50">
@@ -6,18 +12,18 @@ const NexusSidebar = () => (
       <span className="material-symbols-outlined">bolt</span>
     </div>
     <nav className="flex flex-col gap-6 flex-1 overflow-y-auto custom-scrollbar">
-      <button className="p-2 rounded-lg bg-primary/10 text-primary">
+      <NavLink to="/dashboard" className={navClasses}>
         <span className="material-symbols-outlined">house</span>
-      </button>
-      <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+      </NavLink>
+      <NavLink to="/nexus" className={navClasses}>
         <span className="material-symbols-outlined">folder</span>
-      </button>
-      <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+      </NavLink>
+      <NavLink to="/messages" className={navClasses}>
         <span className="material-symbols-outlined">chat_bubble</span>
-      </button>
-      <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+      </NavLink>
+      <NavLink to="/rooms" className={navClasses}>
         <span className="material-symbols-outlined">group</span>
-      </button>
+      </NavLink>
     </nav>
     <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors shrink-0">
       <span className="material-symbols-outlined">settings</span>

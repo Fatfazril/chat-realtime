@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import ContactItem from './ContactItem'
 
 const contacts = [
+// ... existing contacts ...
   {
     id: 1,
     name: 'Jordan Lee',
@@ -11,6 +13,7 @@ const contacts = [
     isOnline: true,
     isTyping: true,
   },
+// ... remaining unchanged lines ...
   {
     id: 2,
     name: 'Sarah Chen',
@@ -46,12 +49,12 @@ function Sidebar({ activeContactId, onSelectContact }) {
   return (
     <aside className="w-20 lg:w-64 border-r border-slate-200 dark:border-primary/20 flex flex-col bg-background-light dark:bg-background-dark shrink-0">
       {/* Logo / Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-primary/20 flex items-center gap-3">
-        <div className="size-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0">
-          <span className="material-symbols-outlined">chat_bubble</span>
+      <Link to="/rooms" className="p-4 border-b border-slate-200 dark:border-primary/20 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-primary/5 transition-colors cursor-pointer group">
+        <div className="size-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0 group-hover:bg-primary/90 transition-colors">
+          <span className="material-symbols-outlined">arrow_back</span>
         </div>
-        <h1 className="hidden lg:block font-bold text-xl tracking-tight">Messages</h1>
-      </div>
+        <h1 className="hidden lg:block font-bold text-xl tracking-tight">Main App</h1>
+      </Link>
 
       {/* Search */}
       <div className="p-4">
