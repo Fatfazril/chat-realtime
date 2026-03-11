@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import ChatArea from '../components/ChatArea';
@@ -15,7 +15,6 @@ function MessagesPage() {
   const [rooms, setRooms] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   
-  const [currentRoom, setCurrentRoom] = useState(null);
   const [messages, setMessages] = useState([]);
 
   // Fetch all user rooms to display in sidebar
@@ -40,7 +39,6 @@ function MessagesPage() {
 
     fetchWithAuth(`/api/rooms/${activeRoomId}`)
       .then(r => r.json())
-      .then(data => setCurrentRoom(data.room || null))
       .catch(console.error);
 
     fetchWithAuth(`/api/rooms/${activeRoomId}/messages`)
