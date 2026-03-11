@@ -1,5 +1,6 @@
 import React from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const navItems = [
   { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -9,12 +10,20 @@ const navItems = [
   { to: '/profile', icon: 'person', label: 'Profile' },
 ]
 
-const currentUser = {
-  name: 'Alex Rivers',
-  avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAIxTGYcPPJLGZl7qcOCwn7sRpEQNdwIyX770kE9HsYknJNydVI5fSUZkb6Szn0LjUogJacfWrDF7ouyxkGNGu-OLyqWhdMMlmqY0MVyqoj7IXDbkaSYsJN8dFkS0eDJ3E0JlqXXXXYR4Y6Pq7FXOigqwB8Qkg6aDKBv0rrulpL0E9YEtURanXpVlz5Wz3GUYKphFRMuLoYmQXtqhCEC6iFYya4yBgzhTcSd-sOliE6yc27RGM0VtgkAyOBQhe-oLDQBYf8ziB2cjs',
-}
-
 function AppLayout() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  const activeUser = user || {
+    username: 'Guest',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest'
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
       {/* Sidebar */}
@@ -47,17 +56,28 @@ function AppLayout() {
           ))}
         </nav>
 
-        {/* User Profile */}
-        <div className="p-4 border-t border-primary/10">
+        {/* User Profile & Logout */}
+        <div className="mt-auto p-4 border-t border-primary/10 flex flex-col gap-2">
           <div className="flex items-center gap-3 p-2 bg-primary/5 rounded-xl">
-            <div
-              className="size-10 rounded-full bg-primary/20 avatar"
-              style={{ backgroundImage: `url('${currentUser.avatar}')` }}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{currentUser.name}</p>
-              <p className="text-xs text-primary">Online</p>
+            <div className="relative size-10 shrink-0 flex items-center justify-center bg-primary/20 rounded-full overflow-hidden">
+                {activeUser.avatar ? (
+                    <img className="w-full h-full object-cover" alt={activeUser.username} src={activeUser.avatar} />
+                ) : (
+                    <span className="material-symbols-outlined text-primary">person</span>
+                )}
+                <span className="absolute bottom-0 right-0 size-2.5 bg-green-500 border-2 border-background-light dark:border-background-dark/50 rounded-full"></span>
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">{activeUser.username}</p>
+              <p className="text-[10px] text-green-500 uppercase tracking-widest font-bold">Online</p>
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="p-2 mr-1 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+              title="Logout"
+            >
+              <span className="material-symbols-outlined text-[20px]">logout</span>
+            </button>
           </div>
         </div>
       </aside>

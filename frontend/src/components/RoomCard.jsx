@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchWithAuth } from '../utils/api'
 
 function RoomCard({ room }) {
   const navigate = useNavigate()
@@ -15,9 +16,8 @@ function RoomCard({ room }) {
   const handleJoin = async () => {
     try {
       setIsJoining(true)
-      const res = await fetch(`/api/rooms/${room._id}/join`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      await fetchWithAuth(`/api/rooms/${room._id}/join`, {
+        method: 'POST'
       })
       
       // Even if already joined (error 400), we can just navigate to the room.

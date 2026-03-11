@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 const RoomSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Room name is required'],
-        unique: true,
+        required: function() { return !this.isDirect; },
         trim: true,
         minlength: 2,
         maxlength: 50
@@ -22,7 +21,11 @@ const RoomSchema = new mongoose.Schema({
     members: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
+    isDirect: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true
 });

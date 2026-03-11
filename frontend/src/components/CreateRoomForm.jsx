@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { fetchWithAuth } from '../utils/api'
 
 function CreateRoomForm({ onRoomCreated }) {
   const [roomName, setRoomName] = useState('')
@@ -15,11 +16,10 @@ function CreateRoomForm({ onRoomCreated }) {
     setError(null)
 
     try {
-      const response = await fetch('/api/rooms', {
+      const response = await fetchWithAuth('/api/rooms', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ name: roomName, description }),
       });

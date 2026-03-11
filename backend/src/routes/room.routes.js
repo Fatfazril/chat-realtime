@@ -3,20 +3,24 @@ const router = express.Router();
 const auth = require('../middlewares/auth');
 const {
     listRooms,
+    getUserRooms,
     createRoom,
     getRoom,
     updateRoom,
     deleteRoom,
     joinRoom,
     leaveRoom,
-    getRoomMembers
+    getRoomMembers,
+    getOrCreateDMRoom
 } = require('../controllers/room.controller');
 
 // All room routes require authentication
 router.use(auth);
 
 router.get('/', listRooms);
+router.get('/me', getUserRooms);
 router.post('/', createRoom);
+router.post('/dm', getOrCreateDMRoom);
 router.get('/:id', getRoom);
 router.put('/:id', updateRoom);
 router.delete('/:id', deleteRoom);

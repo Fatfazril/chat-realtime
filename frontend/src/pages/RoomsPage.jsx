@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import RoomCard from '../components/RoomCard'
 import CreateRoomForm from '../components/CreateRoomForm'
+import { fetchWithAuth } from '../utils/api'
 
 function RoomsPage() {
   const [activeFilter, setActiveFilter] = useState('trending')
@@ -10,9 +11,7 @@ function RoomsPage() {
   const fetchRooms = async () => {
     try {
       setIsLoading(true)
-      const res = await fetch('/api/rooms', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      })
+      const res = await fetchWithAuth('/api/rooms')
       if (res.ok) {
         const data = await res.json()
         setRooms(data.rooms || [])

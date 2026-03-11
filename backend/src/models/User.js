@@ -28,7 +28,36 @@ const UserSchema = new mongoose.Schema({
     isOnline: {
         type: Boolean,
         default: false
-    }
+    },
+    statusMessage: {
+        type: String,
+        default: "Available",
+        maxlength: 100
+    },
+    presence: {
+        type: String,
+        enum: ['online', 'busy', 'offline'],
+        default: 'online'
+    },
+    friends: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    friendRequests: [{
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'accepted', 'rejected'],
+            default: 'pending'
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, {
     timestamps: true
 });

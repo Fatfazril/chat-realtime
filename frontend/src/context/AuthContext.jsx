@@ -26,6 +26,10 @@ export function AuthProvider({ children }) {
     }
 
     localStorage.setItem('token', data.accessToken);
+    localStorage.setItem('last_username', username);
+    if (data.refreshToken) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
     localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
     return data;
@@ -46,6 +50,10 @@ export function AuthProvider({ children }) {
     }
 
     localStorage.setItem('token', data.accessToken);
+    localStorage.setItem('last_username', username);
+    if (data.refreshToken) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
     localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
     return data;
@@ -53,6 +61,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     setUser(null);
   };

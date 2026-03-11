@@ -10,12 +10,12 @@ function ChatMessages({ messages, contact, isTyping }) {
   }, [messages, isTyping])
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto px-[5%] py-4 space-y-1.5 custom-scrollbar bg-[#efeae2] dark:bg-[#0b141a]">
       {/* Date Separator */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 h-px bg-slate-100 dark:bg-primary/10" />
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Today</span>
-        <div className="flex-1 h-px bg-slate-100 dark:bg-primary/10" />
+      <div className="flex items-center justify-center my-4">
+        <span className="bg-white dark:bg-[#182229] text-[#54656f] dark:text-[#8696a0] px-3 py-1.5 rounded-lg text-[12.5px] shadow-sm tracking-wide">
+          TODAY
+        </span>
       </div>
 
       {/* Messages */}
@@ -29,7 +29,7 @@ function ChatMessages({ messages, contact, isTyping }) {
       ))}
 
       {/* Typing Indicator */}
-      {isTyping && <TypingIndicator avatar={contact.avatar} />}
+      {isTyping && <div className="mt-2"><TypingIndicator /></div>}
 
       <div ref={messagesEndRef} />
     </div>

@@ -1,25 +1,36 @@
 import React from 'react'
 
-function MessageBubble({ message, isOwn, avatar }) {
+function MessageBubble({ message, isOwn }) {
   if (isOwn) {
     return (
-      <div className="flex flex-row-reverse gap-3 max-w-[80%] ml-auto">
-        <div className="space-y-1 flex flex-col items-end">
-          <div className={`bg-primary text-white rounded-2xl rounded-br-none shadow-lg shadow-primary/20 ${
-            message.text.length < 20 ? 'px-4 py-2' : 'p-4'
-          }`}>
-            <p className="text-sm leading-relaxed">{message.text}</p>
-          </div>
-          <div className="flex items-center gap-1 pr-1">
-            <p className="text-[10px] text-slate-500">{message.time}</p>
-            {message.read && (
-              <span
-                className="material-symbols-outlined text-sm text-primary"
-                style={{ fontVariationSettings: "'FILL' 1" }}
-              >
-                check_circle
-              </span>
-            )}
+      <div className="flex flex-row-reverse w-full mb-1">
+        <div className="flex flex-col items-end max-w-[85%] md:max-w-[65%]">
+          <div className="relative bg-[#d1eaff] dark:bg-[#005c8a] text-[#111b21] dark:text-[#e9edef] px-3 pt-1.5 pb-2 rounded-lg shadow-sm">
+            {/* Tail for own message */}
+            <svg 
+              viewBox="0 0 8 13" 
+              width="8" 
+              height="13" 
+              className="absolute top-0 -right-[7px] text-[#d1eaff] dark:text-[#005c8a] drop-shadow-sm" 
+              fill="currentColor"
+            >
+              <path opacity=".13" d="M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z"></path>
+              <path fill="currentColor" d="M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z"></path>
+            </svg>
+            <p className="text-[14.2px] leading-[19px] whitespace-pre-wrap">{message.text}</p>
+            <div className="flex items-center justify-end gap-1 mt-1 -mb-1 float-right ml-4">
+              <span className="text-[11px] text-black/40 dark:text-white/50">{message.time}</span>
+              {message.read && (
+                <span className="material-symbols-outlined text-[14px] text-[#53bdeb]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  done_all
+                </span>
+              )}
+              {!message.read && (
+                <span className="material-symbols-outlined text-[14px] text-black/40 dark:text-white/50" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  check
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -27,28 +38,39 @@ function MessageBubble({ message, isOwn, avatar }) {
   }
 
   return (
-    <div className="flex gap-3 max-w-[80%]">
-      <div
-        className="size-8 rounded-full bg-slate-200 self-end shrink-0 avatar"
-        style={{ backgroundImage: avatar ? `url('${avatar}')` : undefined }}
-      />
-      <div className="space-y-1">
-        {message.image ? (
-          <div className="bg-slate-100 dark:bg-slate-800/80 p-2 rounded-2xl rounded-bl-none border border-primary/10">
-            <div
-              className="w-64 h-40 rounded-xl bg-slate-200 dark:bg-slate-900 bg-cover bg-center overflow-hidden"
-              style={{ backgroundImage: `url('${message.image}')` }}
-            />
-            {message.imageLabel && (
-              <p className="text-xs text-slate-500 p-2 italic">{message.imageLabel}</p>
-            )}
+    <div className="flex w-full mb-1">
+      <div className="flex flex-col items-start max-w-[85%] md:max-w-[65%]">
+        <div className="relative bg-white dark:bg-[#202c33] text-[#111b21] dark:text-[#e9edef] px-3 pt-1.5 pb-2 rounded-lg shadow-sm">
+          {/* Tail for others message */}
+          <svg 
+            viewBox="0 0 8 13" 
+            width="8" 
+            height="13" 
+            className="absolute top-0 -left-[7px] text-white dark:text-[#202c33] drop-shadow-sm scale-x-[-1]" 
+            fill="currentColor"
+          >
+            <path opacity=".13" d="M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z"></path>
+            <path fill="currentColor" d="M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z"></path>
+          </svg>
+          
+          {message.image ? (
+            <div className="flex flex-col gap-1">
+              <div
+                className="w-64 h-40 rounded-lg bg-slate-200 dark:bg-slate-800 bg-cover bg-center overflow-hidden"
+                style={{ backgroundImage: `url('${message.image}')` }}
+              />
+              {message.imageLabel && (
+                <p className="text-[14.2px] leading-[19px] whitespace-pre-wrap mt-1">{message.imageLabel}</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-[14.2px] leading-[19px] whitespace-pre-wrap">{message.text}</p>
+          )}
+          
+          <div className="flex items-center justify-end gap-1 mt-1 -mb-1 float-right ml-4">
+            <span className="text-[11px] text-black/40 dark:text-white/50">{message.time}</span>
           </div>
-        ) : (
-          <div className="bg-slate-100 dark:bg-slate-800/80 p-4 rounded-2xl rounded-bl-none">
-            <p className="text-sm leading-relaxed">{message.text}</p>
-          </div>
-        )}
-        <p className="text-[10px] text-slate-500 pl-1">{message.time}</p>
+        </div>
       </div>
     </div>
   )

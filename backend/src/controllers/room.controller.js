@@ -11,12 +11,12 @@ const listRooms = async (req, res) => {
         const { page, limit, skip } = parsePagination(req.query);
 
         const [rooms, total] = await Promise.all([
-            Room.find()
+            Room.find({ isDirect: false })
                 .populate('owner', 'username avatar')
                 .skip(skip)
                 .limit(limit)
                 .sort({ createdAt: -1 }),
-            Room.countDocuments()
+            Room.countDocuments({ isDirect: false })
         ]);
 
         // Add member count
@@ -31,6 +31,30 @@ const listRooms = async (req, res) => {
         });
     } catch (err) {
         console.error('List rooms error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+/**
+ * GET /api/rooms/me
+ * List all rooms the current user is a member of (including DMs)
+ */
+const getUserRooms = async (req, res) => {
+    try {
+        const rooms = await Room.find({ members: req.user._id })
+            .populate('owner', 'username avatar')
+            .populate('members', 'username avatar isOnline')
+            .sort({ updatedAt: -1 });
+
+        // Add member count and identify if DM
+        const roomsWithMeta = rooms.map(room => ({
+            ...room.toObject(),
+            memberCount: room.members.length
+        }));
+
+        res.json({ rooms: roomsWithMeta });
+    } catch (err) {
+        console.error('Get user rooms error:', err);
         res.status(500).json({ error: 'Server error' });
     }
 };
@@ -237,13 +261,53 @@ const getRoomMembers = async (req, res) => {
     }
 };
 
+/**
+ * POST /api/rooms/dm
+ * Get or create a 1-on-1 direct message room
+ */
+const getOrCreateDMRoom = async (req, res) => {
+    try {
+        const { targetUserId } = req.body;
+
+        if (!targetUserId || targetUserId === req.user._id.toString()) {
+            return res.status(400).json({ error: 'Valid target user ID is required' });
+        }
+
+        // Find existing DM room between these two users
+        let room = await Room.findOne({
+            isDirect: true,
+            members: { $all: [req.user._id, targetUserId], $size: 2 }
+        }).populate('members', 'username avatar isOnline');
+
+        if (room) {
+            return res.json({ room, isNew: false });
+        }
+
+        // Create new DM room
+        room = await Room.create({
+            isDirect: true,
+            owner: req.user._id,
+            members: [req.user._id, targetUserId]
+        });
+
+        const populated = await room.populate('members', 'username avatar isOnline');
+
+        res.status(201).json({ room: populated, isNew: true });
+    } catch (err) {
+        console.error('Get/Create DM Room error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
 module.exports = {
     listRooms,
+    getUserRooms,
     createRoom,
     getRoom,
     updateRoom,
     deleteRoom,
     joinRoom,
     leaveRoom,
-    getRoomMembers
+    getRoomMembers,
+    getOrCreateDMRoom
 };

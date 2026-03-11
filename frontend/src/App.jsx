@@ -7,6 +7,7 @@ import NexusChatPage from './pages/NexusChatPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
+import ProtectedRoute from './components/ProtectedRoute'
 
 function DashboardPage() {
   return (
@@ -49,17 +50,20 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Messages page uses its own chat layout (sidebar + chat area) */}
-        <Route path="/messages" element={<MessagesPage />} />
-        
-        {/* New Nexus Workspace layout */}
-        <Route path="/nexus" element={<NexusChatPage />} />
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          {/* Messages page uses its own chat layout (sidebar + chat area) */}
+          <Route path="/messages" element={<MessagesPage />} />
+          
+          {/* New Nexus Workspace layout */}
+          <Route path="/nexus" element={<NexusChatPage />} />
 
-        {/* All other pages use the AppLayout with sidebar nav */}
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/rooms" element={<RoomsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          {/* All other pages use the AppLayout with sidebar nav */}
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/rooms" element={<RoomsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
         </Route>
 
         {/* Default redirect to login */}

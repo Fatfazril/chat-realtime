@@ -1,71 +1,152 @@
-import React, { useState } from 'react'
-import Sidebar from '../components/Sidebar'
-import ChatArea from '../components/ChatArea'
-
-// Demo data matching the HTML design
-const contactsData = {
-  1: {
-    name: 'Jordan Lee',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD9IfaXPdB6_2qZb1tmAmkkVf1ZFfGyJZ8g5tDXy3w8qrG_GiRAMlJ5wcmCD5KtwkplZDu4AdPDWWQQnEooAu1h_G2H_CxgSDVsFPTid1QSm51hNEfwdzIE47c9KevjlSNDc3RZ0DFlNlzGyXU4I4riqlcLykrZ1p8vt7qeGmtm_T9w-RG3moKj5K84ac4JUXv9cSjoOKDDWR9rps0wBWxOr6LSzle0b4O1wM8fPm_RJx5b6bwUCev3W4ZS8-W_gYG7Uqm4mjdjKv4',
-    isOnline: true,
-    isTyping: true,
-  },
-  2: {
-    name: 'Sarah Chen',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA5r52QFyfUeFGH9pogNv-UpV33U94eD9EiLmTbrLqiDeMMN98WvBrsQ3eqjqziZZyBWK2FkZ5KZ8WJoC0yjN3SjEGxCFS_ner3GJPN4Z1GA5rGdaTZKY73OQxEah9D0nrdnFxtsJ613b1WTS9f2JS7SRpplklRLMi69KHzO6EoOVESYzn2q0a1acSuhCwngFwpWEXLpWWiT60zrg_JVqhsp2U62WWoOKC4_AKsqZgSFxPRz37I2-45Cy7XDBOfJHwX3SDnBCUe-j4',
-    isOnline: false,
-    isTyping: false,
-  },
-  3: {
-    name: 'Alex Rivers',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAphJCyKJmT_qkijyeB_fZHTT1Vge3jlq2q_B0zBPiWRxnOCDxMghFsvmyAWh2mUx-VAhy1RmbkWFgCJaI8vCvJREpntR4sFZZ7GkeZdsMavM5EyGwhCakv5Cb5bZQpBxn2yYbD9z8zyDCIKNrrsPFIoHz_BW38PZL6482oyit3hq-BtqFzHrzVHjK7nmFhlDL53EVshX-k_ApJN-VWvY3Z60PT0JZvH4rmm2XMCSCyWzgW90tEeQxJNZRPi15c-0DzcIq2300clUE',
-    isOnline: true,
-    isTyping: false,
-  },
-}
-
-const initialMessages = {
-  1: [
-    { id: 1, text: 'Hey! Did you have a chance to look at the latest design mockups for the dashboard?', time: '10:12 AM', isOwn: false },
-    { id: 2, text: 'Just finished reviewing them. Overall they look great, but I think the primary button might need more contrast in dark mode.', time: '10:15 AM', isOwn: true, read: true },
-    { id: 3, text: 'Good catch! I\'ll update that now. Can you send me the color palette we used for the mobile version for comparison?', time: '10:16 AM', isOwn: false },
-    { id: 4, text: '', time: '10:18 AM', isOwn: false, image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAyGRzOiIHLD00KNK8AZxZ4GKaF3ntb0l4V9OgbTap-N6d2BOCYTttOAghnGFCOuoznZJtJ5s8ZhTPMsTzmdTs4RoPbd2lBEYsvPpKsoesP0BJFqM_aGjaj8b7UY0PlWf76m_WBrjWCMDaLN99EqyyoefSv49Zyzktu2oYr4ZkUdcNeXlPRphNGtiv0oFO6qDr7Vo6Xow2s_ixkhwIqKLGPkYeAnJG2SzCkhSWB420B-b4vKyFBp0Ts9FBOGG_XM_Gw7jKih0cJats', imageLabel: 'UI_Mockup_v2.png' },
-    { id: 5, text: 'On it! 🚀', time: '10:20 AM', isOwn: true, read: true },
-  ],
-  2: [{ id: 1, text: "Let's catch up later!", time: 'Yesterday', isOwn: false }],
-  3: [{ id: 1, text: 'Sent a file.', time: 'Aug 12', isOwn: false }],
-}
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
+import ChatArea from '../components/ChatArea';
+import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
+import { fetchWithAuth } from '../utils/api';
 
 function MessagesPage() {
-  const [activeContactId, setActiveContactId] = useState(1)
-  const [allMessages, setAllMessages] = useState(initialMessages)
+  const { user } = useAuth();
+  const { socket } = useSocket();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeRoomId = searchParams.get('roomId');
 
-  const activeContact = contactsData[activeContactId]
-  const messages = allMessages[activeContactId] || []
+  const [rooms, setRooms] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  
+  const [currentRoom, setCurrentRoom] = useState(null);
+  const [messages, setMessages] = useState([]);
+
+  // Fetch all user rooms to display in sidebar
+  const fetchMyRooms = () => {
+    fetchWithAuth('/api/rooms/me')
+      .then(r => r.json())
+      .then(data => setRooms(data.rooms || []))
+      .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchMyRooms();
+    fetchWithAuth('/api/users/online')
+      .then(r => r.json())
+      .then(data => setOnlineUsers(data.onlineUsers ? data.onlineUsers.map(u => u._id) : []))
+      .catch(console.error);
+  }, []);
+
+  // Fetch specific room details and messages when selected
+  useEffect(() => {
+    if (!activeRoomId) return;
+
+    fetchWithAuth(`/api/rooms/${activeRoomId}`)
+      .then(r => r.json())
+      .then(data => setCurrentRoom(data.room || null))
+      .catch(console.error);
+
+    fetchWithAuth(`/api/rooms/${activeRoomId}/messages`)
+      .then(r => r.json())
+      .then(data => {
+        // Map backend format to component expectations
+        const formattedMsgs = (data.messages || []).reverse().map(m => ({
+          id: m._id,
+          text: m.message,
+          time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isOwn: m.sender?._id === user?._id,
+          read: true // Assuming read for now
+        }));
+        setMessages(formattedMsgs);
+      })
+      .catch(console.error);
+      
+  }, [activeRoomId, user?._id]);
+
+  // Socket setup
+  useEffect(() => {
+    if (!socket || !activeRoomId) return;
+
+    socket.emit('room:join', { roomId: activeRoomId });
+
+    const handleNewMessage = (msg) => {
+      if (msg.room === activeRoomId) {
+        setMessages(prev => [...prev, {
+          id: msg._id,
+          text: msg.message,
+          time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isOwn: msg.sender?._id === user?._id,
+          read: true
+        }]);
+        socket.emit('message:read', { roomId: activeRoomId, messageIds: [msg._id] });
+      }
+    };
+
+    socket.on('message:receive', handleNewMessage);
+    socket.on('message:sent', handleNewMessage);
+
+    return () => {
+      socket.off('message:receive', handleNewMessage);
+      socket.off('message:sent', handleNewMessage);
+      socket.emit('room:leave', { roomId: activeRoomId });
+    };
+  }, [socket, activeRoomId, user?._id]);
 
   const handleSendMessage = (text) => {
-    const newMsg = {
-      id: Date.now(),
-      text,
-      time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-      isOwn: true,
-      read: false,
+    if (socket && activeRoomId) {
+      socket.emit('message:send', { roomId: activeRoomId, message: text });
     }
-    setAllMessages(prev => ({
-      ...prev,
-      [activeContactId]: [...(prev[activeContactId] || []), newMsg],
-    }))
-  }
+  };
+
+  // Convert rooms to Sidebar contacts prop format
+  const contactsList = rooms.map(r => {
+    // For DMs, show the other user
+    if (r.isDirect) {
+      const friend = r.members?.find(m => m._id !== user?._id) || r.members?.[0];
+      return {
+        id: r._id,
+        name: friend?.username || 'Unknown',
+        avatar: friend?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend?.username}`,
+        time: '',
+        lastMessage: r.name || 'Direct Message', // Just a placeholder for last message text
+        isOnline: friend ? onlineUsers.includes(friend._id) : false,
+        isTyping: false
+      };
+    }
+    // For normal rooms
+    return {
+      id: r._id,
+      name: r.name,
+      avatar: r.icon ? undefined : `https://api.dicebear.com/7.x/identicon/svg?seed=${r._id}`,
+      time: '',
+      lastMessage: `${r.memberCount || r.members?.length || 0} members`,
+      isOnline: false,
+      isTyping: false
+    };
+  });
+
+  const activeContact = contactsList.find(c => c.id === activeRoomId) || null;
 
   return (
-    <div className="flex h-full">
-      <Sidebar activeContactId={activeContactId} onSelectContact={setActiveContactId} />
-      <ChatArea
-        contact={activeContact}
-        messages={messages}
-        isTyping={activeContact.isTyping}
-        onSendMessage={handleSendMessage}
+    <div className="flex h-screen bg-background-light dark:bg-background-dark font-display overflow-hidden">
+      <Sidebar 
+        activeContactId={activeRoomId} 
+        onSelectContact={(id) => setSearchParams({ roomId: id })} 
+        contacts={contactsList}
       />
+      
+      {activeRoomId && activeContact ? (
+        <ChatArea
+          contact={activeContact}
+          messages={messages}
+          isTyping={activeContact.isTyping}
+          onSendMessage={handleSendMessage}
+        />
+      ) : (
+        <main className="flex-1 flex items-center justify-center bg-[#efeae2] dark:bg-[#0b141a]">
+          <div className="text-center">
+            <h2 className="text-2xl font-light text-slate-500 mb-4">ChatApp Web</h2>
+            <p className="text-slate-400">Select a chat to start messaging.</p>
+          </div>
+        </main>
+      )}
     </div>
   )
 }

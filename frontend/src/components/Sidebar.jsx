@@ -47,24 +47,41 @@ function Sidebar({ activeContactId, onSelectContact }) {
   )
 
   return (
-    <aside className="w-20 lg:w-64 border-r border-slate-200 dark:border-primary/20 flex flex-col bg-background-light dark:bg-background-dark shrink-0">
-      {/* Logo / Header */}
-      <Link to="/rooms" className="p-4 border-b border-slate-200 dark:border-primary/20 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-primary/5 transition-colors cursor-pointer group">
-        <div className="size-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0 group-hover:bg-primary/90 transition-colors">
-          <span className="material-symbols-outlined">arrow_back</span>
+    <aside className="w-20 lg:w-[400px] border-r border-slate-200 dark:border-[#313d45] flex flex-col bg-white dark:bg-[#111b21] shrink-0">
+      {/* Header */}
+      <div className="h-[59px] px-4 bg-[#f0f2f5] dark:bg-[#202c33] flex items-center justify-between shrink-0">
+        <div
+          className="size-10 rounded-full bg-slate-300 dark:bg-slate-700 shrink-0 avatar cursor-pointer"
+          style={{ backgroundImage: `url('${currentUser.avatar}')` }}
+        />
+        <div className="flex items-center gap-3 text-[#54656f] dark:text-[#aebac1]">
+          <Link to="/rooms" className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center cursor-pointer">
+            <span className="material-symbols-outlined text-[24px]">groups</span>
+          </Link>
+          <button className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center">
+            <span className="material-symbols-outlined text-[24px]">donut_large</span>
+          </button>
+          <button className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center">
+            <span className="material-symbols-outlined text-[24px]">chat</span>
+          </button>
+          <button className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors flex items-center justify-center">
+            <span className="material-symbols-outlined text-[24px]">more_vert</span>
+          </button>
         </div>
-        <h1 className="hidden lg:block font-bold text-xl tracking-tight">Main App</h1>
-      </Link>
+      </div>
 
       {/* Search */}
-      <div className="p-4">
-        <div className="relative group">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+      <div className="p-2 bg-white dark:bg-[#111b21] border-b border-slate-200 dark:border-[#222d34]">
+        <div className="relative group flex items-center bg-[#f0f2f5] dark:bg-[#202c33] rounded-lg px-3 py-1.5 focus-within:bg-white dark:focus-within:bg-[#202c33] transition-colors shadow-sm">
+          <span className="material-symbols-outlined shrink-0 text-[#54656f] dark:text-[#8696a0] w-6 text-sm group-focus-within:hidden transition-all">
             search
           </span>
+          <span className="material-symbols-outlined shrink-0 text-[#00a884] dark:text-[#00a884] w-6 text-sm hidden group-focus-within:block transition-all">
+            arrow_back
+          </span>
           <input
-            className="w-full bg-slate-100 dark:bg-primary/10 border-none rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary"
-            placeholder="Search chats..."
+            className="w-full bg-transparent border-none pl-3 py-1 text-[15px] focus:ring-0 text-[#111b21] dark:text-[#e9edef] placeholder:text-[#54656f] dark:placeholder:text-[#8696a0] outline-none"
+            placeholder="Search or start new chat"
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -73,7 +90,7 @@ function Sidebar({ activeContactId, onSelectContact }) {
       </div>
 
       {/* Contacts List */}
-      <nav className="flex-1 overflow-y-auto space-y-1 px-2">
+      <nav className="flex-1 overflow-y-auto custom-scrollbar bg-white dark:bg-[#111b21]">
         {filteredContacts.map((contact) => (
           <div key={contact.id} onClick={() => onSelectContact(contact.id)}>
             <ContactItem
@@ -88,21 +105,6 @@ function Sidebar({ activeContactId, onSelectContact }) {
           </div>
         ))}
       </nav>
-
-      {/* User Profile */}
-      <div className="p-4 border-t border-slate-200 dark:border-primary/20 flex items-center gap-3">
-        <div
-          className="size-10 rounded-full bg-slate-300 dark:bg-slate-700 shrink-0 avatar"
-          style={{ backgroundImage: `url('${currentUser.avatar}')` }}
-        />
-        <div className="hidden lg:block flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">{currentUser.name}</p>
-          <p className="text-xs text-slate-500">Active now</p>
-        </div>
-        <button className="hidden lg:block text-slate-400 hover:text-primary transition-colors">
-          <span className="material-symbols-outlined">settings</span>
-        </button>
-      </div>
     </aside>
   )
 }
