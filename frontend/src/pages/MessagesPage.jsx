@@ -66,13 +66,16 @@ function MessagesPage() {
 
     const handleNewMessage = (msg) => {
       if (msg.room === activeRoomId) {
-        setMessages(prev => [...prev, {
-          id: msg._id,
-          text: msg.message,
-          time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isOwn: msg.sender?._id === user?._id,
-          read: true
-        }]);
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg._id)) return prev;
+          return [...prev, {
+            id: msg._id,
+            text: msg.message,
+            time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isOwn: msg.sender?._id === user?._id,
+            read: true
+          }];
+        });
         socket.emit('message:read', { roomId: activeRoomId, messageIds: [msg._id] });
       }
     };

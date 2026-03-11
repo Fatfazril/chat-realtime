@@ -419,7 +419,10 @@ export default function NexusChatPage() {
     const handleNewMessage = (msg) => {
       // Check if message belongs to current room
       if (msg.room === currentRoomId) {
-        setMessages(prev => [...prev, msg]);
+        setMessages(prev => {
+          if (prev.some(m => m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
         socket.emit('message:read', { roomId: currentRoomId, messageIds: [msg._id] });
       }
     };
