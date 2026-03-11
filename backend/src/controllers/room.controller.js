@@ -8,15 +8,21 @@ const { parsePagination } = require('../utils/pagination');
  */
 const listRooms = async (req, res) => {
     try {
-        const { page, limit, skip } = parsePagination(req.query);
+        const { page, limit, skip, q } = parsePagination(req.query);
+
+        // Don't return current user in the general list
+        const query = { isDirect: false };
+        if (q && q.trim().length >= 2) {
+            query.name = { $regex: q.trim(), $options: 'i' };
+        }
 
         const [rooms, total] = await Promise.all([
-            Room.find({ isDirect: false })
+            Room.find(query)
                 .populate('owner', 'username avatar')
                 .skip(skip)
                 .limit(limit)
                 .sort({ createdAt: -1 }),
-            Room.countDocuments({ isDirect: false })
+            Room.countDocuments(query)
         ]);
 
         // Add member count
@@ -82,7 +88,8 @@ const createRoom = async (req, res) => {
             name: name.trim(),
             description: description || '',
             owner: req.user._id,
-            members: [req.user._id]
+            members: [req.user._id],
+            admins: [req.user._id]
         });
 
         const populated = await room.populate('owner', 'username avatar');
@@ -299,6 +306,159 @@ const getOrCreateDMRoom = async (req, res) => {
     }
 };
 
+/**
+ * POST /api/rooms/:id/admins
+ * Promote a member to admin (Owner or Admin only)
+ */
+const promoteToAdmin = async (req, res) => {
+    try {
+        const room = await Room.findById(req.params.id);
+        if (!room) return res.status(404).json({ error: 'Room not found' });
+
+        const isOwner = room.owner.toString() === req.user._id.toString();
+        const isAdmin = room.admins.some(a => a.toString() === req.user._id.toString());
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ error: 'Only admins can modify roles' });
+        }
+
+        const { targetUserId } = req.body;
+        if (!room.members.some(m => m.toString() === targetUserId)) {
+            return res.status(400).json({ error: 'User is not a member of this room' });
+        }
+
+        if (!room.admins.some(a => a.toString() === targetUserId)) {
+            room.admins.push(targetUserId);
+            await room.save();
+        }
+
+        res.json({ message: 'User promoted to Admin', admins: room.admins });
+    } catch (err) {
+        console.error('Promote Admin error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+/**
+ * DELETE /api/rooms/:id/admins/:userId
+ * Demote an admin to regular member (Owner only)
+ */
+const demoteFromAdmin = async (req, res) => {
+    try {
+        const room = await Room.findById(req.params.id);
+        if (!room) return res.status(404).json({ error: 'Room not found' });
+
+        if (room.owner.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: 'Only the room owner can demote admins' });
+        }
+
+        const targetUserId = req.params.userId;
+        if (targetUserId === room.owner.toString()) {
+            return res.status(400).json({ error: 'Cannot demote the room owner' });
+        }
+
+        room.admins = room.admins.filter(a => a.toString() !== targetUserId);
+        await room.save();
+
+        res.json({ message: 'User demoted from Admin', admins: room.admins });
+    } catch (err) {
+        console.error('Demote Admin error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+/**
+ * DELETE /api/rooms/:id/members/:userId
+ * Remove a member from the room (Owner or Admin only)
+ */
+const removeMember = async (req, res) => {
+    try {
+        const room = await Room.findById(req.params.id);
+        if (!room) return res.status(404).json({ error: 'Room not found' });
+
+        const isOwner = room.owner.toString() === req.user._id.toString();
+        const isAdmin = room.admins.some(a => a.toString() === req.user._id.toString());
+        
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ error: 'Only admins can remove members' });
+        }
+
+        const targetUserId = req.params.userId;
+
+        // Cannot kick the owner
+        if (targetUserId === room.owner.toString()) {
+            return res.status(403).json({ error: 'Cannot kick the room owner' });
+        }
+
+        // An admin cannot kick another admin unless they are the owner
+        const targetIsAdmin = room.admins.some(a => a.toString() === targetUserId);
+        if (targetIsAdmin && !isOwner) {
+            return res.status(403).json({ error: 'Only the owner can kick other admins' });
+        }
+
+        room.members = room.members.filter(m => m.toString() !== targetUserId);
+        room.admins = room.admins.filter(a => a.toString() !== targetUserId);
+        await room.save();
+
+        res.json({ message: 'Member removed from room' });
+    } catch (err) {
+        console.error('Remove member error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+/**
+ * POST /api/rooms/:id/invite-token
+ * Generate a new invite token for a room
+ */
+const generateInviteToken = async (req, res) => {
+    try {
+        const room = await Room.findById(req.params.id);
+        if (!room) return res.status(404).json({ error: 'Room not found' });
+
+        const isOwner = room.owner.toString() === req.user._id.toString();
+        const isAdmin = room.admins.some(a => a.toString() === req.user._id.toString());
+        
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ error: 'Only admins can generate invite links' });
+        }
+
+        const crypto = require('crypto');
+        room.inviteToken = crypto.randomBytes(12).toString('hex');
+        await room.save();
+
+        res.json({ inviteToken: room.inviteToken });
+    } catch (err) {
+        console.error('Generate invite token error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+/**
+ * POST /api/rooms/join/:token
+ * Join a room using an invite token
+ */
+const joinWithToken = async (req, res) => {
+    try {
+        const room = await Room.findOne({ inviteToken: req.params.token });
+        if (!room) {
+            return res.status(404).json({ error: 'Invalid or expired invite token' });
+        }
+
+        // Check if already a member
+        if (room.members.some(m => m.toString() === req.user._id.toString())) {
+            return res.status(400).json({ error: 'Already a member of this room', room });
+        }
+
+        room.members.push(req.user._id);
+        await room.save();
+
+        res.json({ message: 'Joined room successfully', room });
+    } catch (err) {
+        console.error('Join with token error:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
 module.exports = {
     listRooms,
     getUserRooms,
@@ -309,5 +469,10 @@ module.exports = {
     joinRoom,
     leaveRoom,
     getRoomMembers,
-    getOrCreateDMRoom
+    getOrCreateDMRoom,
+    promoteToAdmin,
+    demoteFromAdmin,
+    removeMember,
+    generateInviteToken,
+    joinWithToken
 };

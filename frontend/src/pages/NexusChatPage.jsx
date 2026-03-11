@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -240,6 +240,26 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) =>
     </main>
   );
 
+  const handleInvite = async () => {
+    try {
+      const res = await fetchWithAuth(`/api/rooms/${currentRoom._id}/invite-token`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.inviteToken) {
+        const inviteLink = `${window.location.origin}/invite/${data.inviteToken}`;
+        await navigator.clipboard.writeText(inviteLink);
+        alert('Invite link copied to clipboard!');
+      } else {
+        alert(data.error || 'Failed to generate invite link');
+      }
+    } catch (err) {
+      console.error('Invite generation error:', err);
+    }
+  };
+
+  const isOwner = currentRoom?.owner?._id === currentUser?._id || currentRoom?.owner === currentUser?._id;
+  const isAdmin = currentRoom?.admins?.some(a => a === currentUser?._id || a._id === currentUser?._id);
+  const canInvite = !currentRoom?.isDirect && (isOwner || isAdmin);
+
   return (
   <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-background-dark relative">
     {/* Header */}
@@ -249,31 +269,41 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) =>
           {!currentRoom.isDirect && <span className="text-slate-400 font-normal">#</span>}
           {currentRoom.isDirect ? (currentRoom.members?.find(m => m._id !== currentUser?._id)?.username || 'Direct Message') : currentRoom.name}
         </div>
-        <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-2"></div>
-        <div className="text-xs text-slate-500 flex items-center gap-1">
-          <span className="material-symbols-outlined text-base">person</span>
-          {currentRoom.members?.length || 0} members
-        </div>
+        {!currentRoom.isDirect && (
+          <>
+            <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-2"></div>
+            <div className="text-xs text-slate-500 flex items-center gap-1">
+              <span className="material-symbols-outlined text-base">person</span>
+              {currentRoom.members?.length || 0} members
+            </div>
+            {canInvite && (
+              <button onClick={handleInvite} className="ml-2 p-1.5 bg-primary/10 text-primary hover:bg-primary transition-colors hover:text-white rounded-lg flex items-center gap-1 text-xs font-bold" title="Generate Invite Link">
+                <span className="material-symbols-outlined text-[14px]">link</span> Invite
+              </button>
+            )}
+          </>
+        )}
       </div>
     </header>
 
     {/* Feed */}
     <div className="flex-1 overflow-y-auto p-6 custom-scrollbar flex flex-col gap-6">
       {messages.map((msg, i) => {
-        const isOwn = msg.sender?._id === currentUser?._id;
+        const isOwn = String(msg.sender?._id || msg.sender?.id || msg.sender) === String(currentUser?._id || currentUser?.id);
         return (
-          <div key={msg._id || i} className="flex gap-4 group">
-            {/* If sender has avatar use it, else generic */}
-            <img className="size-10 rounded-xl object-cover shrink-0 bg-primary/20" alt={msg.sender?.username} src={msg.sender?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.sender?.username}`} />
-            <div className={`flex flex-col gap-1 min-w-0 ${isOwn ? 'items-end ml-auto' : ''}`}>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold">{msg.sender?.username}</span>
-                <span className="text-[10px] text-slate-400">
-                  {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : 'Just now'}
-                </span>
-              </div>
-              <div className={`w-fit max-w-2xl px-4 py-2.5 rounded-xl shadow-sm ${isOwn ? 'bg-primary text-white rounded-tr-none' : 'bg-slate-100 dark:bg-primary/10 text-slate-800 dark:text-slate-200 rounded-tl-none'}`}>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+          <div key={msg._id || i} className={`w-full flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
+            <div className={`flex gap-3 max-w-[90%] md:max-w-[75%] ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+              <img className="size-8 md:size-10 rounded-full object-cover shrink-0 bg-primary/20 mt-1" alt={msg.sender?.username} src={msg.sender?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.sender?.username}`} />
+              <div className={`flex flex-col gap-1 min-w-0 ${isOwn ? 'items-end' : 'items-start'}`}>
+                <div className="flex items-baseline gap-2 mx-1">
+                  <span className="text-sm font-bold">{msg.sender?.username}</span>
+                  <span className="text-[10px] text-slate-400">
+                    {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                  </span>
+                </div>
+                <div className={`w-fit px-4 py-2.5 rounded-2xl shadow-sm ${isOwn ? 'bg-primary text-white rounded-tr-sm' : 'bg-white dark:bg-[#202c33] border border-slate-100 dark:border-primary/10 text-slate-800 dark:text-[#e9edef] rounded-tl-sm'}`}>
+                  <p className="text-[14.2px] leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -322,42 +352,103 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) =>
   </main>
   );
 };
-const NexusMembersSidebar = ({ currentRoom, onlineUsers }) => {
-  if (!currentRoom) return <aside className="w-72 hidden xl:flex flex-col border-l border-slate-200 dark:border-primary/20 bg-slate-50 dark:bg-background-dark/30"></aside>;
+const NexusMembersSidebar = ({ currentRoom, onlineUsers, currentUser, onRefreshRoom }) => {
+  if (!currentRoom || currentRoom.isDirect) return <aside className="w-72 hidden xl:flex flex-col border-l border-slate-200 dark:border-primary/20 bg-slate-50 dark:bg-background-dark/30"></aside>;
   
   const members = currentRoom.members || [];
   const online = members.filter(m => onlineUsers.includes(m._id));
   const offline = members.filter(m => !onlineUsers.includes(m._id));
+
+  const isOwner = currentRoom.owner?._id === currentUser?._id || currentRoom.owner === currentUser?._id;
+  const isAdmin = currentRoom.admins?.some(a => a === currentUser?._id || a._id === currentUser?._id) || isOwner;
+
+  const handleAction = async (action, userId) => {
+    try {
+        let method = 'POST';
+        let url = `/api/rooms/${currentRoom._id}/admins`;
+        let body = null;
+
+        if (action === 'promote') {
+            body = JSON.stringify({ targetUserId: userId });
+        } else if (action === 'demote') {
+            method = 'DELETE';
+            url = `/api/rooms/${currentRoom._id}/admins/${userId}`;
+        } else if (action === 'kick') {
+            method = 'DELETE';
+            url = `/api/rooms/${currentRoom._id}/members/${userId}`;
+        }
+
+        const res = await fetchWithAuth(url, {
+            method,
+            headers: body ? { 'Content-Type': 'application/json' } : undefined,
+            body
+        });
+
+        if (res.ok) {
+            onRefreshRoom();
+        } else {
+            const data = await res.json();
+            alert(data.error || 'Action failed');
+        }
+    } catch (err) {
+        console.error('Member action error:', err);
+    }
+  };
+
+  const renderMember = (user, isOffline = false) => {
+      const isTargetOwner = currentRoom.owner === user._id || currentRoom.owner?._id === user._id;
+      const isTargetAdmin = currentRoom.admins?.some(a => a === user._id || a._id === user._id);
+      
+      const canModerate = isAdmin && user._id !== currentUser?._id && !isTargetOwner && (isOwner || !isTargetAdmin);
+
+      return (
+        <div key={user._id} className={`flex items-center justify-between group ${isOffline ? 'opacity-60' : ''}`}>
+            <div className="flex items-center gap-3">
+            <div className={`relative size-10 shrink-0 ${isOffline ? 'grayscale' : ''}`}>
+                <img className="size-10 rounded-full object-cover bg-primary/20" alt={user.username} src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
+                {!isOffline && <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-slate-50 dark:border-background-dark rounded-full"></span>}
+            </div>
+            <div className="flex flex-col overflow-hidden">
+                <span className="text-sm font-bold truncate flex items-center gap-1">
+                    {user.username} 
+                    {isTargetOwner && <span className="material-symbols-outlined text-[12px] text-yellow-500" title="Owner">star</span>}
+                    {isTargetAdmin && !isTargetOwner && <span className="material-symbols-outlined text-[12px] text-blue-500" title="Admin">shield</span>}
+                </span>
+                <span className="text-[11px] text-slate-500 truncate">{isOffline ? 'Offline' : 'Online'}</span>
+            </div>
+            </div>
+            
+            {canModerate && (
+                <div className="hidden group-hover:flex items-center gap-1 shrink-0">
+                    {!isTargetAdmin ? (
+                        <button onClick={() => handleAction('promote', user._id)} className="p-1 text-slate-400 hover:text-primary transition-colors" title="Promote to Admin">
+                            <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+                        </button>
+                    ) : (
+                        <button onClick={() => handleAction('demote', user._id)} className="p-1 text-slate-400 hover:text-orange-500 transition-colors" title="Demote Admin">
+                            <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+                        </button>
+                    )}
+                    <button onClick={() => handleAction('kick', user._id)} className="p-1 text-slate-400 hover:text-red-500 transition-colors" title="Remove Member">
+                        <span className="material-symbols-outlined text-[16px]">person_remove</span>
+                    </button>
+                </div>
+            )}
+        </div>
+      );
+  };
 
   return (
     <aside className="w-72 hidden xl:flex flex-col border-l border-slate-200 dark:border-primary/20 bg-slate-50 dark:bg-background-dark/30">
       <div className="p-6 overflow-y-auto custom-scrollbar">
         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Online — {online.length}</h3>
         <div className="flex flex-col gap-5">
-          {online.map(user => (
-            <div key={user._id} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="relative size-10 shrink-0">
-                  <img className="size-10 rounded-full object-cover bg-primary/20" alt={user.username} src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
-                  <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-slate-50 dark:border-background-dark rounded-full"></span>
-                </div>
-                <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm font-bold truncate">{user.username}</span>
-                  <span className="text-[11px] text-slate-500 truncate">Online</span>
-                </div>
-              </div>
-            </div>
-          ))}
+          {online.map(u => renderMember(u, false))}
         </div>
 
         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-10 mb-6">Offline — {offline.length}</h3>
-        <div className="flex flex-col gap-5 opacity-60">
-          {offline.map(user => (
-            <div key={user._id} className="flex items-center gap-3">
-              <img className="size-10 rounded-full object-cover grayscale shrink-0 bg-primary/20" alt={user.username} src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
-              <span className="text-sm font-medium pt-1">{user.username}</span>
-            </div>
-          ))}
+        <div className="flex flex-col gap-5">
+          {offline.map(u => renderMember(u, true))}
         </div>
       </div>
     </aside>
@@ -392,23 +483,26 @@ export default function NexusChatPage() {
       .catch(console.error);
   }, []);
 
-  // Fetch current room details & messages on room ID change
-  useEffect(() => {
+  const fetchCurrentRoomDetails = useCallback(() => {
     if (!currentRoomId) return;
-
-    // Room details
     fetchWithAuth(`/api/rooms/${currentRoomId}`)
       .then(r => r.json())
       .then(data => setCurrentRoom(data.room || null))
       .catch(console.error);
+  }, [currentRoomId]);
 
+  // Fetch current room details & messages on room ID change
+  useEffect(() => {
+    fetchCurrentRoomDetails();
+
+    if (!currentRoomId) return;
     // Messages
     fetchWithAuth(`/api/rooms/${currentRoomId}/messages`)
       .then(r => r.json())
       .then(data => setMessages((data.messages || []).reverse()))
       .catch(console.error);
       
-  }, [currentRoomId]);
+  }, [currentRoomId, fetchCurrentRoomDetails]);
 
   // Socket join/leave & listeners
   useEffect(() => {
@@ -469,6 +563,8 @@ export default function NexusChatPage() {
       <NexusMembersSidebar 
         currentRoom={currentRoom} 
         onlineUsers={onlineUsers} 
+        currentUser={user}
+        onRefreshRoom={fetchCurrentRoomDetails}
       />
     </div>
   );

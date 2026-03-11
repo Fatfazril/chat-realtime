@@ -49,14 +49,15 @@ function MessagesPage() {
           id: m._id,
           text: m.message,
           time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isOwn: m.sender?._id === user?._id,
-          read: true // Assuming read for now
+          isOwn: String(m.sender?._id || m.sender?.id || m.sender) === String(user?._id || user?.id),
+          read: true, // Assuming read for now
+          sender: m.sender
         }));
         setMessages(formattedMsgs);
       })
       .catch(console.error);
       
-  }, [activeRoomId, user?._id]);
+  }, [activeRoomId, user?._id, user?.id]);
 
   // Socket setup
   useEffect(() => {
@@ -72,8 +73,9 @@ function MessagesPage() {
             id: msg._id,
             text: msg.message,
             time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isOwn: msg.sender?._id === user?._id,
-            read: true
+            isOwn: String(msg.sender?._id || msg.sender?.id || msg.sender) === String(user?._id || user?.id),
+            read: true,
+            sender: msg.sender
           }];
         });
         socket.emit('message:read', { roomId: activeRoomId, messageIds: [msg._id] });
@@ -88,7 +90,7 @@ function MessagesPage() {
       socket.off('message:sent', handleNewMessage);
       socket.emit('room:leave', { roomId: activeRoomId });
     };
-  }, [socket, activeRoomId, user?._id]);
+  }, [socket, activeRoomId, user?._id, user?.id]);
 
   const handleSendMessage = (text) => {
     if (socket && activeRoomId) {

@@ -11,7 +11,12 @@ const {
     joinRoom,
     leaveRoom,
     getRoomMembers,
-    getOrCreateDMRoom
+    getOrCreateDMRoom,
+    promoteToAdmin,
+    demoteFromAdmin,
+    removeMember,
+    generateInviteToken,
+    joinWithToken
 } = require('../controllers/room.controller');
 
 // All room routes require authentication
@@ -27,5 +32,12 @@ router.delete('/:id', deleteRoom);
 router.post('/:id/join', joinRoom);
 router.post('/:id/leave', leaveRoom);
 router.get('/:id/members', getRoomMembers);
+
+// New Admins & Invites Routes
+router.post('/:id/admins', promoteToAdmin);
+router.delete('/:id/admins/:userId', demoteFromAdmin);
+router.delete('/:id/members/:userId', removeMember);
+router.post('/:id/invite-token', generateInviteToken);
+router.post('/join/:token', joinWithToken);
 
 module.exports = router;

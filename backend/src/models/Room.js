@@ -22,6 +22,15 @@ const RoomSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    admins: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
+    inviteToken: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
     isDirect: {
         type: Boolean,
         default: false

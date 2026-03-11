@@ -7,6 +7,7 @@ import NexusChatPage from './pages/NexusChatPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ProfilePage from './pages/ProfilePage'
+import InvitePage from './pages/InvitePage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function DashboardPage() {
@@ -57,6 +58,9 @@ function App() {
           
           {/* New Nexus Workspace layout */}
           <Route path="/nexus" element={<NexusChatPage />} />
+
+          {/* Invite Handler */}
+          <Route path="/invite/:token" element={<InvitePage />} />
 
           {/* All other pages use the AppLayout with sidebar nav */}
           <Route element={<AppLayout />}>

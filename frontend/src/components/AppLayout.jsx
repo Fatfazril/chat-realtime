@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { fetchWithAuth } from '../utils/api'
 
 const navItems = [
   { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
@@ -17,6 +18,90 @@ function AppLayout() {
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState({ users: [], rooms: [] })
+  const [isSearching, setIsSearching] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const searchTimeoutRef = useRef(null)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults({ users: [], rooms: [] })
+      setIsSearching(false)
+      return
+    }
+
+    setIsSearching(true)
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const [usersRes, roomsRes] = await Promise.all([
+          fetchWithAuth(`/api/users/search?q=${encodeURIComponent(searchQuery)}`),
+          fetchWithAuth(`/api/rooms?q=${encodeURIComponent(searchQuery)}`)
+        ])
+        
+        const usersData = await usersRes.json()
+        const roomsData = await roomsRes.json()
+
+        setSearchResults({
+          users: usersData.users || [],
+          rooms: roomsData.rooms || []
+        })
+      } catch (err) {
+        console.error('Global search error:', err)
+      } finally {
+        setIsSearching(false)
+      }
+    }, 500)
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
+    }
+  }, [searchQuery])
+
+  const handleUserClick = async (targetUserId) => {
+    try {
+      // Create or get DM room
+      const res = await fetchWithAuth('/api/rooms/dm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId })
+      })
+      const data = await res.json()
+      if (res.ok && data.room) {
+        setShowDropdown(false)
+        setSearchQuery('')
+        navigate(`/messages?roomId=${data.room._id}`)
+      }
+    } catch (err) {
+      console.error('Failed to create/get DM:', err)
+    }
+  }
+
+  const handleRoomClick = async (roomId) => {
+    // Attempt to join the room if not already a member, then navigate to nexus
+    try {
+      await fetchWithAuth(`/api/rooms/${roomId}/join`, { method: 'POST' })
+      setShowDropdown(false)
+      setSearchQuery('')
+      navigate('/nexus') // Room joining currently relies on Nexus picking it up
+    } catch (err) {
+      console.error('Failed to join room:', err)
+    }
   }
 
   const activeUser = user || {
@@ -87,13 +172,73 @@ function AppLayout() {
         {/* Top Nav */}
         <header className="h-16 flex items-center justify-between px-6 border-b border-primary/10 sticky top-0 bg-background-dark/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-4 flex-1">
-            <div className="relative w-full max-w-md">
+            <div className="relative w-full max-w-md" ref={dropdownRef}>
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">search</span>
               <input
-                className="w-full bg-primary/5 border-none rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-primary text-sm transition-all"
+                className="w-full bg-primary/5 border-none rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-primary text-sm transition-all text-slate-900 dark:text-slate-100 placeholder:text-slate-500"
                 placeholder="Search rooms or people..."
                 type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setShowDropdown(true)
+                }}
+                onFocus={() => setShowDropdown(true)}
               />
+
+              {/* Search Dropdown */}
+              {showDropdown && searchQuery.trim().length >= 2 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#111b21] border border-slate-200 dark:border-[#222d34] rounded-xl shadow-xl overflow-hidden z-50 max-h-96 overflow-y-auto custom-scrollbar">
+                  {isSearching ? (
+                    <div className="p-4 text-center text-sm text-slate-500">Searching...</div>
+                  ) : searchResults.users.length === 0 && searchResults.rooms.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-slate-500">No results found</div>
+                  ) : (
+                    <div className="py-2">
+                      {searchResults.users.length > 0 && (
+                        <div className="mb-2">
+                          <div className="px-4 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider">People</div>
+                          {searchResults.users.map(u => (
+                            <button
+                              key={u._id}
+                              onClick={() => handleUserClick(u._id)}
+                              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-[#202c33] transition-colors text-left"
+                            >
+                              <img src={u.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.username}`} alt={u.username} className="size-8 rounded-full bg-slate-200" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate text-slate-900 dark:text-slate-100">{u.username}</p>
+                              </div>
+                              <span className="material-symbols-outlined text-[18px] text-primary">chat</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {searchResults.rooms.length > 0 && (
+                        <div>
+                          <div className="px-4 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider">Rooms</div>
+                          {searchResults.rooms.map(r => (
+                            <button
+                              key={r._id}
+                              onClick={() => handleRoomClick(r._id)}
+                              className="w-full px-4 py-2 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-[#202c33] transition-colors text-left"
+                            >
+                              <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-primary text-[18px]">tag</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate text-slate-900 dark:text-slate-100">{r.name}</p>
+                                <p className="text-xs text-slate-500 truncate">{r.memberCount || 0} members</p>
+                              </div>
+                              <span className="material-symbols-outlined text-[18px] text-primary">login</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3">
