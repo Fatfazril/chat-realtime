@@ -1,6 +1,7 @@
 const Message = require('../models/Message');
 const Room = require('../models/Room');
 const { parsePagination } = require('../utils/pagination');
+const { publishMessage } = require('../sockets/redis.pubsub');
 
 /**
  * GET /api/rooms/:roomId/messages
@@ -70,6 +71,14 @@ const editMessage = async (req, res) => {
         await msg.save();
 
         const populated = await msg.populate('sender', 'username avatar');
+        
+        await publishMessage('chat:message_update', {
+            room: msg.room,
+            _id: msg._id,
+            message: msg.message,
+            edited: true
+        });
+
         res.json({ message: 'Message updated', data: populated });
     } catch (err) {
         if (err.kind === 'ObjectId') {
@@ -96,6 +105,12 @@ const deleteMessage = async (req, res) => {
         }
 
         await Message.findByIdAndDelete(req.params.id);
+
+        await publishMessage('chat:message_delete', {
+            room: msg.room,
+            _id: msg._id
+        });
+
         res.json({ message: 'Message deleted' });
     } catch (err) {
         if (err.kind === 'ObjectId') {

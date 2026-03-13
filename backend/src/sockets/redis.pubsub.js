@@ -40,6 +40,24 @@ const initRedisPubSub = async (io) => {
         }
     });
 
+    await sub.subscribe('chat:message_update', (rawMessage) => {
+        try {
+            const data = JSON.parse(rawMessage);
+            io.to(data.room).emit('message:update', data);
+        } catch (err) {
+            console.error('Redis sub parse error:', err);
+        }
+    });
+
+    await sub.subscribe('chat:message_delete', (rawMessage) => {
+        try {
+            const data = JSON.parse(rawMessage);
+            io.to(data.room).emit('message:delete', data);
+        } catch (err) {
+            console.error('Redis sub parse error:', err);
+        }
+    });
+
     console.log('Redis Pub/Sub initialized');
 };
 

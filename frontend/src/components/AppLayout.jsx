@@ -5,7 +5,7 @@ import { fetchWithAuth } from '../utils/api'
 
 const navItems = [
   { to: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
-  { to: '/nexus', icon: 'bolt', label: 'Workspace' },
+  { to: '/workspace', icon: 'bolt', label: 'Workspace' },
   { to: '/rooms', icon: 'groups', label: 'Rooms' },
   { to: '/messages', icon: 'chat', label: 'Messages' },
   { to: '/profile', icon: 'person', label: 'Profile' },
@@ -98,7 +98,7 @@ function AppLayout() {
       await fetchWithAuth(`/api/rooms/${roomId}/join`, { method: 'POST' })
       setShowDropdown(false)
       setSearchQuery('')
-      navigate('/nexus') // Room joining currently relies on Nexus picking it up
+      navigate('/workspace') // Room joining currently relies on Workspace picking it up
     } catch (err) {
       console.error('Failed to join room:', err)
     }

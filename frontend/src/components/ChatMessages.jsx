@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react'
 import MessageBubble from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
 
-function ChatMessages({ messages, contact, isTyping }) {
+function ChatMessages({ messages, contact, isTyping, onEdit, onDelete }) {
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
@@ -25,6 +25,8 @@ function ChatMessages({ messages, contact, isTyping }) {
           message={msg}
           isOwn={msg.isOwn}
           avatar={contact.avatar}
+          onEdit={onEdit}
+          onDelete={onDelete}
         />
       ))}
 

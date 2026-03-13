@@ -22,7 +22,7 @@ function RoomCard({ room }) {
       
       // Even if already joined (error 400), we can just navigate to the room.
       // Or we can parse the error. For now, navigate to it in Nexus workspace.
-      navigate(`/nexus?roomId=${room._id}`)
+      navigate(`/workspace?roomId=${room._id}`)
     } catch (err) {
       console.error('Failed to join room', err)
     } finally {

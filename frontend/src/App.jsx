@@ -57,7 +57,7 @@ function App() {
           <Route path="/messages" element={<MessagesPage />} />
           
           {/* New Nexus Workspace layout */}
-          <Route path="/nexus" element={<NexusChatPage />} />
+          <Route path="/workspace" element={<NexusChatPage />} />
 
           {/* Invite Handler */}
           <Route path="/invite/:token" element={<InvitePage />} />

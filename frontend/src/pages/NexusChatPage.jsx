@@ -10,7 +10,7 @@ const navClasses = ({ isActive }) =>
   }`;
 
 const NexusSidebar = ({ onLogout }) => (
-  <aside className="w-16 hidden md:flex flex-col items-center py-6 gap-8 border-r border-slate-200 dark:border-primary/20 bg-white dark:bg-background-dark/50">
+  <aside className="w-16 hidden md:flex flex-col items-center py-6 gap-8 border-r border-slate-200 dark:border-primary/20 bg-white dark:bg-[#111b21]">
     <div className="size-10 bg-primary rounded-xl flex items-center justify-center text-white mb-4 shadow-lg shadow-primary/20 shrink-0">
       <span className="material-symbols-outlined">bolt</span>
     </div>
@@ -18,7 +18,7 @@ const NexusSidebar = ({ onLogout }) => (
       <NavLink to="/dashboard" className={navClasses}>
         <span className="material-symbols-outlined">house</span>
       </NavLink>
-      <NavLink to="/nexus" className={navClasses}>
+      <NavLink to="/workspace" className={navClasses}>
         <span className="material-symbols-outlined">folder</span>
       </NavLink>
       <NavLink to="/messages" className={navClasses}>
@@ -49,7 +49,7 @@ const NexusRoomSidebar = ({ rooms, currentRoomId, onSelectRoom, user }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
-  <aside className="w-64 hidden lg:flex flex-col border-r border-slate-200 dark:border-primary/20 bg-slate-50 dark:bg-background-dark/30 relative">
+  <aside className="w-64 hidden lg:flex flex-col border-r border-slate-200 dark:border-primary/20 bg-[#ffffff] dark:bg-[#111b21] relative">
     <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-lg font-bold">Channels</h2>
@@ -218,16 +218,27 @@ const SearchModal = ({ onClose, onSelectRoom }) => {
     );
 };
 
-const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) => {
+const NexusChatArea = ({ currentRoom, messages, onSendMessage, onEditMessage, onDeleteMessage, currentUser }) => {
   const [text, setText] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const messagesEndRef = useRef(null);
 
   const handleSend = (e) => {
     e.preventDefault();
     if (text.trim()) {
-      onSendMessage(text);
+      if (editingId) {
+        onEditMessage(editingId, text);
+        setEditingId(null);
+      } else {
+        onSendMessage(text);
+      }
       setText('');
     }
+  };
+
+  const startEdit = (msg) => {
+    setEditingId(msg._id);
+    setText(msg.message);
   };
 
   useEffect(() => {
@@ -235,8 +246,11 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) =>
   }, [messages]);
 
   if (!currentRoom) return (
-    <main className="flex-1 flex items-center justify-center bg-white dark:bg-background-dark text-slate-400 font-bold">
-      Select a channel to start messaging
+    <main className="flex-1 flex items-center justify-center bg-[#efeae2] dark:bg-[#0b141a]">
+      <div className="text-center">
+        <h2 className="text-2xl font-light text-slate-500 mb-4">Workspace Web</h2>
+        <p className="text-slate-400">Select a channel to start messaging.</p>
+      </div>
     </main>
   );
 
@@ -261,9 +275,9 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) =>
   const canInvite = !currentRoom?.isDirect && (isOwner || isAdmin);
 
   return (
-  <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-background-dark relative">
+  <main className="flex-1 flex flex-col min-w-0 bg-[#efeae2] dark:bg-[#0b141a] relative">
     {/* Header */}
-    <header className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-primary/20 shrink-0">
+    <header className="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-[#202c33] bg-white dark:bg-[#111b21] shrink-0">
       <div className="flex items-center gap-3">
         <div className="text-primary font-bold text-xl flex items-center gap-1">
           {!currentRoom.isDirect && <span className="text-slate-400 font-normal">#</span>}
@@ -301,8 +315,17 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) =>
                     {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
                   </span>
                 </div>
-                <div className={`w-fit px-4 py-2.5 rounded-2xl shadow-sm ${isOwn ? 'bg-primary text-white rounded-tr-sm' : 'bg-white dark:bg-[#202c33] border border-slate-100 dark:border-primary/10 text-slate-800 dark:text-[#e9edef] rounded-tl-sm'}`}>
-                  <p className="text-[14.2px] leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
+                <div className={`flex items-center gap-2 ${isOwn ? 'flex-row' : 'flex-row-reverse'}`}>
+                  {isOwn && (
+                    <div className="hidden group-hover:flex flex-col gap-1 opacity-50 hover:opacity-100 transition-opacity text-slate-400 hover:text-primary">
+                      <button onClick={() => startEdit(msg)} title="Edit"><span className="material-symbols-outlined text-[14px]">edit</span></button>
+                      <button onClick={() => {if(window.confirm('Delete message?')) onDeleteMessage(msg._id)}} title="Delete" className="hover:text-red-500"><span className="material-symbols-outlined text-[14px]">delete</span></button>
+                    </div>
+                  )}
+                  <div className={`w-fit px-4 py-2.5 rounded-2xl shadow-sm ${isOwn ? 'bg-primary text-white rounded-tr-sm' : 'bg-white dark:bg-[#202c33] border border-slate-100 dark:border-primary/10 text-slate-800 dark:text-[#e9edef] rounded-tl-sm'}`}>
+                    <p className="text-[14.2px] leading-relaxed whitespace-pre-wrap break-words">{msg.message}</p>
+                    {msg.edited && <span className="text-[10px] opacity-70 block mt-1">(edited)</span>}
+                  </div>
                 </div>
               </div>
             </div>
@@ -343,8 +366,13 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) =>
               <span className="material-symbols-outlined">sentiment_satisfied</span>
             </button>
             <button type="submit" disabled={!text.trim()} className="size-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50">
-              <span className="material-symbols-outlined">send</span>
+              <span className="material-symbols-outlined">{editingId ? 'edit' : 'send'}</span>
             </button>
+            {editingId && (
+              <button type="button" onClick={() => {setEditingId(null); setText('');}} className="size-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 active:scale-95 transition-all">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -353,7 +381,7 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, currentUser }) =>
   );
 };
 const NexusMembersSidebar = ({ currentRoom, onlineUsers, currentUser, onRefreshRoom }) => {
-  if (!currentRoom || currentRoom.isDirect) return <aside className="w-72 hidden xl:flex flex-col border-l border-slate-200 dark:border-primary/20 bg-slate-50 dark:bg-background-dark/30"></aside>;
+  if (!currentRoom || currentRoom.isDirect) return <aside className="w-72 hidden xl:flex flex-col border-l border-slate-200 dark:border-[#202c33] bg-[#ffffff] dark:bg-[#111b21]"></aside>;
   
   const members = currentRoom.members || [];
   const online = members.filter(m => onlineUsers.includes(m._id));
@@ -439,7 +467,7 @@ const NexusMembersSidebar = ({ currentRoom, onlineUsers, currentUser, onRefreshR
   };
 
   return (
-    <aside className="w-72 hidden xl:flex flex-col border-l border-slate-200 dark:border-primary/20 bg-slate-50 dark:bg-background-dark/30">
+    <aside className="w-72 hidden xl:flex flex-col border-l border-slate-200 dark:border-[#202c33] bg-[#ffffff] dark:bg-[#111b21]">
       <div className="p-6 overflow-y-auto custom-scrollbar">
         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Online — {online.length}</h3>
         <div className="flex flex-col gap-5">
@@ -526,11 +554,26 @@ export default function NexusChatPage() {
     socket.on('message:receive', handleNewMessage);
     socket.on('message:sent', handleNewMessage); // My own sent messages
     socket.on('room:joined', handleRoomJoined);
+    
+    // Edit and Delete real-time handlers
+    socket.on('message:update', (data) => {
+        if (data.room === currentRoomId) {
+            setMessages(prev => prev.map(m => m._id === data._id ? { ...m, message: data.message, edited: true } : m));
+        }
+    });
+
+    socket.on('message:delete', (data) => {
+        if (data.room === currentRoomId) {
+            setMessages(prev => prev.filter(m => m._id !== data._id));
+        }
+    });
 
     return () => {
       socket.off('message:receive', handleNewMessage);
       socket.off('message:sent', handleNewMessage);
       socket.off('room:joined', handleRoomJoined);
+      socket.off('message:update');
+      socket.off('message:delete');
       socket.emit('room:leave', { roomId: currentRoomId });
     };
   }, [socket, currentRoomId]);
@@ -538,6 +581,30 @@ export default function NexusChatPage() {
   const handleSendMessage = (text) => {
     if (socket && currentRoomId) {
       socket.emit('message:send', { roomId: currentRoomId, message: text });
+    }
+  };
+
+  const handleEditMessage = async (messageId, newText) => {
+    try {
+        const res = await fetchWithAuth(`/api/messages/${messageId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: newText })
+        });
+        if (!res.ok) alert('Failed to edit message');
+    } catch (err) {
+        console.error(err);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+        const res = await fetchWithAuth(`/api/messages/${messageId}`, {
+            method: 'DELETE'
+        });
+        if (!res.ok) alert('Failed to delete message');
+    } catch (err) {
+        console.error(err);
     }
   };
 
@@ -557,6 +624,8 @@ export default function NexusChatPage() {
         currentRoom={currentRoom} 
         messages={messages} 
         onSendMessage={handleSendMessage} 
+        onEditMessage={handleEditMessage}
+        onDeleteMessage={handleDeleteMessage}
         onlineUsers={onlineUsers} 
         currentUser={user}
       />

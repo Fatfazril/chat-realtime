@@ -1,12 +1,9 @@
-import React, { useState } from 'react'
+import React from 'react'
 
-function ChatInput({ onSendMessage }) {
-  const [message, setMessage] = useState('')
-
+function ChatInput({ onSendMessage, messageText, setMessageText, isEditing, onCancelEdit }) {
   const handleSend = () => {
-    if (message.trim()) {
-      onSendMessage(message.trim())
-      setMessage('')
+    if (messageText && messageText.trim()) {
+      onSendMessage(messageText.trim())
     }
   }
 
@@ -32,9 +29,9 @@ function ChatInput({ onSendMessage }) {
             className="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 max-h-32 custom-scrollbar outline-none"
             placeholder="Type a message"
             rows={1}
-            value={message}
+            value={messageText}
             onChange={(e) => {
-              setMessage(e.target.value)
+              setMessageText(e.target.value)
               // Auto-resize logic could go here
               e.target.style.height = 'auto';
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
@@ -43,16 +40,22 @@ function ChatInput({ onSendMessage }) {
           />
         </div>
 
-        {message.trim() ? (
+        {messageText && messageText.trim() ? (
           <button
             onClick={handleSend}
             className="p-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors shrink-0 flex items-center justify-center shadow-lg shadow-primary/20"
           >
-            <span className="material-symbols-outlined text-[20px]">send</span>
+            <span className="material-symbols-outlined text-[20px]">{isEditing ? 'edit' : 'send'}</span>
           </button>
         ) : (
           <button className="p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors shrink-0">
             <span className="material-symbols-outlined text-[24px]">mic</span>
+          </button>
+        )}
+
+        {isEditing && (
+          <button onClick={onCancelEdit} className="p-2 ml-1 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors shrink-0 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         )}
       </div>

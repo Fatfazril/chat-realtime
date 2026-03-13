@@ -1,3 +1,4 @@
+/* eslint-env node */
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -10,7 +11,7 @@ export default {
       colors: {
         "primary": "#5b2bee",
         "background-light": "#f6f6f8",
-        "background-dark": "#151022",
+        "background-dark": "#0b141a",
       },
       fontFamily: {
         "display": ["Inter", "sans-serif"],

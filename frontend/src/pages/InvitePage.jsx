@@ -18,7 +18,7 @@ function InvitePage() {
         
         if (res.ok) {
             setRoomData(data.room);
-            setTimeout(() => navigate('/nexus'), 2000);
+            setTimeout(() => navigate('/workspace'), 2000);
         } else {
             setError(data.error || 'Failed to join via invite link.');
         }

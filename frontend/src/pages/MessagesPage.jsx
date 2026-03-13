@@ -84,10 +84,24 @@ function MessagesPage() {
 
     socket.on('message:receive', handleNewMessage);
     socket.on('message:sent', handleNewMessage);
+    
+    socket.on('message:update', (data) => {
+      if (data.room === activeRoomId) {
+        setMessages(prev => prev.map(m => m.id === data._id ? { ...m, text: data.message, edited: true } : m));
+      }
+    });
+
+    socket.on('message:delete', (data) => {
+      if (data.room === activeRoomId) {
+        setMessages(prev => prev.filter(m => m.id !== data._id));
+      }
+    });
 
     return () => {
       socket.off('message:receive', handleNewMessage);
       socket.off('message:sent', handleNewMessage);
+      socket.off('message:update');
+      socket.off('message:delete');
       socket.emit('room:leave', { roomId: activeRoomId });
     };
   }, [socket, activeRoomId, user?._id, user?.id]);
@@ -95,6 +109,30 @@ function MessagesPage() {
   const handleSendMessage = (text) => {
     if (socket && activeRoomId) {
       socket.emit('message:send', { roomId: activeRoomId, message: text });
+    }
+  };
+
+  const handleEditMessage = async (messageId, newText) => {
+    try {
+        const res = await fetchWithAuth(`/api/messages/${messageId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: newText })
+        });
+        if (!res.ok) alert('Failed to edit message');
+    } catch (err) {
+        console.error(err);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+        const res = await fetchWithAuth(`/api/messages/${messageId}`, {
+            method: 'DELETE'
+        });
+        if (!res.ok) alert('Failed to delete message');
+    } catch (err) {
+        console.error(err);
     }
   };
 
@@ -141,6 +179,8 @@ function MessagesPage() {
           messages={messages}
           isTyping={activeContact.isTyping}
           onSendMessage={handleSendMessage}
+          onEditMessage={handleEditMessage}
+          onDeleteMessage={handleDeleteMessage}
         />
       ) : (
         <main className="flex-1 flex items-center justify-center bg-[#efeae2] dark:bg-[#0b141a]">

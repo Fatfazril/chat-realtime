@@ -228,7 +228,7 @@ export default function ProfilePage() {
                   ) : (
                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                         {rooms.slice(0, 4).map(room => (
-                            <Link key={room._id} to={`/nexus?roomId=${room._id}`} className="group flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 hover:border-primary/40 hover:bg-primary/10 transition-all cursor-pointer">
+                            <Link key={room._id} to={`/workspace?roomId=${room._id}`} className="group flex items-center gap-4 p-4 rounded-xl bg-primary/5 border border-primary/10 hover:border-primary/40 hover:bg-primary/10 transition-all cursor-pointer">
                               <div className="size-12 rounded-lg bg-primary/20 flex items-center justify-center text-primary shrink-0 overflow-hidden">
                                 {room.isDirect ? (
                                      <span className="material-symbols-outlined">person</span>
