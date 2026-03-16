@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import ChatArea from '../components/ChatArea';
 import { useAuth } from '../context/AuthContext';
@@ -166,13 +166,84 @@ function MessagesPage() {
   const activeContact = contactsList.find(c => c.id === activeRoomId) || null;
 
   return (
-    <div className="flex h-screen bg-background-light dark:bg-background-dark font-display overflow-hidden">
-      <Sidebar 
-        activeContactId={activeRoomId} 
-        onSelectContact={(id) => setSearchParams({ roomId: id })} 
-        contacts={contactsList}
-      />
-      
+    <div className="flex h-screen w-full overflow-hidden text-slate-900 dark:text-slate-100 bg-background-light dark:bg-[#0b141a] font-display">
+      {/* Left Navigation Sidebar (Icon Style) */}
+      <aside className="w-20 flex flex-col items-center py-6 border-r border-slate-200 dark:border-[#202c33] bg-white dark:bg-[#0b141a] shrink-0">
+        <div className="mb-10 text-primary">
+          <span className="material-symbols-outlined text-4xl">forum</span>
+        </div>
+        <nav className="flex flex-col gap-6 flex-1">
+          <Link to="/dashboard" className="p-3 rounded-xl hover:bg-primary/10 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-2xl">home</span>
+          </Link>
+          <Link to="/messages" className="p-3 rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+            <span className="material-symbols-outlined text-2xl">chat_bubble</span>
+          </Link>
+          <Link to="/rooms" className="p-3 rounded-xl hover:bg-primary/10 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-2xl">group</span>
+          </Link>
+          <Link to="/contacts" className="p-3 rounded-xl hover:bg-primary/10 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-2xl">call</span>
+          </Link>
+          <Link to="/settings" className="p-3 rounded-xl hover:bg-primary/10 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-2xl">settings</span>
+          </Link>
+        </nav>
+        <div className="mt-auto">
+          {user?.avatar ? (
+            <img src={user.avatar} alt="Profile" className="size-10 rounded-full object-cover ring-2 ring-primary ring-offset-2 ring-offset-background-dark" />
+          ) : (
+            <div className="size-10 rounded-full bg-gradient-to-tr from-primary to-purple-400 flex items-center justify-center text-white font-bold ring-2 ring-primary ring-offset-2 ring-offset-[#0b141a]">
+              {user?.username?.substring(0, 2).toUpperCase() || 'U'}
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Messages List Sidebar */}
+      <section className="w-80 border-r border-slate-200 dark:border-[#202c33] bg-slate-50 dark:bg-[#111b21] flex flex-col shrink-0">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold tracking-tight">Messages</h2>
+            <button className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-all">
+              <span className="material-symbols-outlined text-xl font-bold">add</span>
+            </button>
+          </div>
+          <div className="relative mb-4">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+            <input className="w-full bg-white dark:bg-[#0b141a] border border-slate-200 dark:border-[#202c33] rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-400 outline-none text-slate-900 dark:text-slate-100" placeholder="Search conversations..." type="text" />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-1">
+          {contactsList.map(contact => (
+            <div 
+              key={contact.id} 
+              onClick={() => setSearchParams({ roomId: contact.id })}
+              className={`flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer group ${activeRoomId === contact.id ? 'bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20' : 'hover:bg-slate-100 dark:hover:bg-primary/5 border border-transparent'}`}
+            >
+              <div className="relative shrink-0">
+                <img alt="User" className="size-12 rounded-full object-cover bg-slate-200" src={contact.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${contact.id}`} />
+                {contact.isOnline && <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-white dark:border-[#111b21] rounded-full"></span>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start">
+                  <h4 className="font-semibold text-sm truncate">{contact.name}</h4>
+                  <span className="text-[10px] text-slate-400">{contact.time || '12:00'}</span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{contact.lastMessage}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="p-4 border-t border-slate-200 dark:border-[#202c33]">
+          <button className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+            <span className="material-symbols-outlined text-lg">archive</span>
+            Archived Chats
+          </button>
+        </div>
+      </section>
+
+      {/* Main Inbox Area or ChatArea */}
       {activeRoomId && activeContact ? (
         <ChatArea
           contact={activeContact}
@@ -183,12 +254,156 @@ function MessagesPage() {
           onDeleteMessage={handleDeleteMessage}
         />
       ) : (
-        <main className="flex-1 flex items-center justify-center bg-[#efeae2] dark:bg-[#0b141a]">
-          <div className="text-center">
-            <h2 className="text-2xl font-light text-slate-500 mb-4">ChatApp Web</h2>
-            <p className="text-slate-400">Select a chat to start messaging.</p>
-          </div>
-        </main>
+        <>
+          <main className="flex-1 flex flex-col bg-white dark:bg-[#0b141a]">
+            {/* Inbox Header & Filters */}
+            <header className="p-6 border-b border-slate-200 dark:border-[#202c33] flex flex-col gap-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">Inbox</h1>
+                  <p className="text-slate-500 text-sm">You have {contactsList.length} unread messages today.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+                    <span className="material-symbols-outlined">filter_list</span>
+                  </button>
+                  <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/10 transition-colors">
+                    <span className="material-symbols-outlined">more_vert</span>
+                  </button>
+                  <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:shadow-lg hover:shadow-primary/30 transition-all">
+                    <span className="material-symbols-outlined text-lg">edit</span>
+                    New Message
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="px-4 py-1.5 rounded-full bg-primary text-white text-sm font-medium">All</button>
+                <button className="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-[#111b21] text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-primary/20 transition-colors border border-transparent dark:border-[#202c33]">Unread</button>
+                <button className="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-[#111b21] text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-primary/20 transition-colors border border-transparent dark:border-[#202c33]">Mentions</button>
+                <button className="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-[#111b21] text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-primary/20 transition-colors border border-transparent dark:border-[#202c33]">Drafts</button>
+              </div>
+            </header>
+
+            {/* Conversation View / Message List */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+              <div className="max-w-4xl mx-auto space-y-4">
+                {contactsList.map((contact, idx) => (
+                  <div key={contact.id} onClick={() => setSearchParams({ roomId: contact.id })} className="group flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-[#202c33] hover:border-primary/40 dark:hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-primary/5 transition-all cursor-pointer bg-white dark:bg-[#111b21]">
+                    <div className="flex items-center gap-4 flex-1">
+                      {idx % 2 === 0 ? (
+                        <div className="shrink-0 size-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold">
+                          {contact.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      ) : (
+                        <img alt="User" className="size-12 rounded-xl object-cover bg-slate-200" src={contact.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${contact.id}`} />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-900 dark:text-slate-100">{contact.name}</h3>
+                          {idx % 3 === 0 && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-500 uppercase tracking-wider">Project</span>}
+                          {idx % 3 === 1 && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-500 uppercase tracking-wider">Direct</span>}
+                        </div>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 truncate">{contact.lastMessage}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6 ml-4">
+                      <div className="hidden group-hover:flex items-center gap-3">
+                        <button className="p-2 rounded-lg text-slate-400 hover:text-primary transition-colors">
+                          <span className="material-symbols-outlined text-xl">star</span>
+                        </button>
+                        <button className="p-2 rounded-lg text-slate-400 hover:text-red-500 transition-colors">
+                          <span className="material-symbols-outlined text-xl">delete</span>
+                        </button>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-semibold text-slate-400">{contact.time || '10:45 AM'}</p>
+                        {idx === 0 && (
+                            <div className="flex justify-end mt-1">
+                                <span className="size-2 rounded-full bg-primary"></span>
+                            </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* New Message Floating Input Area (Collapsed) */}
+            <div className="px-6 py-4 bg-slate-50 dark:bg-[#111b21] border-t border-slate-200 dark:border-[#202c33]">
+              <div className="max-w-4xl mx-auto flex items-center gap-4">
+                <div className="flex-1 relative">
+                  <input className="w-full bg-white dark:bg-[#0b141a] border border-slate-200 dark:border-[#202c33] rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-slate-900 dark:text-slate-100 placeholder:text-slate-500" placeholder="Start a new message..." type="text" />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-400">
+                    <button className="hover:text-primary transition-colors"><span className="material-symbols-outlined text-xl">sentiment_satisfied</span></button>
+                    <button className="hover:text-primary transition-colors"><span className="material-symbols-outlined text-xl">attach_file</span></button>
+                  </div>
+                </div>
+                <button className="size-11 rounded-xl bg-primary text-white flex items-center justify-center hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">send</span>
+                </button>
+              </div>
+            </div>
+          </main>
+
+          {/* Right Detail/Info Panel */}
+          <aside className="w-72 border-l border-slate-200 dark:border-[#202c33] bg-white dark:bg-[#111b21] hidden xl:flex flex-col">
+            <div className="p-6 flex flex-col items-center text-center">
+              <div className="relative mb-4">
+                {user?.avatar ? (
+                  <img alt="Profile" className="size-24 rounded-2xl object-cover ring-4 ring-primary/10" src={user.avatar} />
+                ) : (
+                  <div className="size-24 rounded-2xl bg-gradient-to-tr from-primary to-purple-400 flex items-center justify-center text-4xl text-white font-bold ring-4 ring-primary/10">
+                    {user?.username?.substring(0, 2).toUpperCase() || 'U'}
+                  </div>
+                )}
+                <span className="absolute -bottom-1 -right-1 size-5 bg-green-500 border-4 border-white dark:border-[#111b21] rounded-full"></span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">{user?.username}</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Online</p>
+              <div className="flex gap-3 w-full">
+                <button className="flex-1 py-2 rounded-lg bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors border border-transparent">Profile</button>
+                <button className="flex-1 py-2 rounded-lg bg-slate-100 dark:bg-[#0b141a] text-slate-600 dark:text-slate-300 text-sm font-semibold hover:bg-primary/20 transition-colors border border-transparent dark:border-[#202c33]">Settings</button>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 flex-1 overflow-y-auto custom-scrollbar border-t border-slate-200 dark:border-[#202c33]">
+              <div className="mb-6 mt-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Shared Media</h4>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="aspect-square bg-slate-100 dark:bg-primary/10 rounded-lg overflow-hidden border border-slate-200 dark:border-primary/20"></div>
+                  <div className="aspect-square bg-slate-100 dark:bg-primary/10 rounded-lg overflow-hidden border border-slate-200 dark:border-primary/20"></div>
+                  <div className="aspect-square bg-slate-100 dark:bg-primary/10 rounded-lg overflow-hidden border border-slate-200 dark:border-primary/20"></div>
+                </div>
+              </div>
+              <div className="mb-6">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Recent Files</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-[#0b141a] cursor-pointer transition-colors">
+                    <span className="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">description</span>
+                    <div className="min-w-0 text-slate-900 dark:text-slate-100">
+                      <p className="text-xs font-semibold truncate">brand_guidelines_v2.pdf</p>
+                      <p className="text-[10px] text-slate-400">4.2 MB • Oct 12</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-[#0b141a] cursor-pointer transition-colors">
+                    <span className="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">image</span>
+                    <div className="min-w-0 text-slate-900 dark:text-slate-100">
+                      <p className="text-xs font-semibold truncate">hero_banner_final.png</p>
+                      <p className="text-[10px] text-slate-400">12.5 MB • Oct 10</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-200 dark:border-[#202c33]">
+              <button className="w-full flex items-center justify-center gap-2 text-red-500 text-sm font-bold hover:bg-red-500/10 border border-transparent hover:border-red-500/20 py-2 rounded-lg transition-colors">
+                <span className="material-symbols-outlined text-lg font-bold">exit_to_app</span>
+                Log Out
+              </button>
+            </div>
+          </aside>
+        </>
       )}
     </div>
   )
