@@ -24,12 +24,23 @@ Here are some highlights of the custom frontend UI built using Tailwind and Reac
 A modern, dark-mode native login/registration split layout to handle secure access securely.
 > *To view: Start the frontend server and navigate to `http://localhost:5173/login`*
 
+![Login Page](docs/login-page.png)
+![Register Page](docs/register-page.png)
+
 ### Nexus Chat Dashboard
 The core workspace experience featuring floating sidebars, direct messages, rooms, and live online presence pulse animations.
 - **Real-time Messaging**: Fully integrated with Socket.IO to send and receive live messages.
 - **Room Syncing**: Dynamically fetches active rooms and hydrates message history via REST API.
 - **Online Status Tracking**: Sidebar members list populates with live online/offline presence indicators.
 > *To view: Login and click the Workspace (bolt icon) in the sidebar!*
+
+![Messages Page](docs/messages-page.png)
+
+### Rooms Directory
+Discover and join public or private communities using a clean, interactive grid layout filtering active conversations.
+> *To view: Navigate to `http://localhost:5173/rooms`*
+
+![Rooms Page](docs/rooms-page.png)
 
 ### Dynamic Profile Page
 A dedicated page to manage your user settings, automatically fetching and saving profile (username, email) updates instantly to the backend API.
