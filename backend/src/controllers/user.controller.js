@@ -219,7 +219,7 @@ const updateUser = async (req, res) => {
             return res.status(403).json({ error: 'You can only update your own profile' });
         }
 
-        const { username, avatar, email, statusMessage, presence } = req.body;
+        const { username, avatar, email, statusMessage, presence, bio, isPublic } = req.body;
         const updates = {};
 
         if (username) {
@@ -255,6 +255,14 @@ const updateUser = async (req, res) => {
 
         if (presence && ['online', 'busy', 'offline'].includes(presence)) {
             updates.presence = presence;
+        }
+
+        if (bio !== undefined) {
+            updates.bio = bio.trim().substring(0, 250);
+        }
+
+        if (isPublic !== undefined) {
+            updates.isPublic = Boolean(isPublic);
         }
 
         const user = await User.findByIdAndUpdate(

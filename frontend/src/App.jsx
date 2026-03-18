@@ -13,6 +13,7 @@ import DashboardPage from './pages/DashboardPage'
 import DiscoverPage from './pages/DiscoverPage'
 import FriendsPage from './pages/FriendsPage'
 import SettingsPage from './pages/SettingsPage'
+import RoomHubPage from './pages/RoomHubPage'
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
           <Route path="/discover" element={<DiscoverPage />} />
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/roomhub" element={<RoomHubPage />} />
 
           {/* All other pages use the AppLayout with sidebar nav */}
           <Route element={<AppLayout />}>

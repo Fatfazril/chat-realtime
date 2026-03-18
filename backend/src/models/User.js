@@ -39,6 +39,15 @@ const UserSchema = new mongoose.Schema({
         enum: ['online', 'busy', 'offline'],
         default: 'online'
     },
+    bio: {
+        type: String,
+        default: '',
+        maxlength: 250
+    },
+    isPublic: {
+        type: Boolean,
+        default: true
+    },
     friends: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

@@ -1,12 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { fetchWithAuth } from '../utils/api';
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('Profile');
-  const [username, setUsername] = useState('alexjohnson_dev');
-  const [email, setEmail] = useState('alex.j@nebula.io');
-  const [bio, setBio] = useState('Full-stack developer passionate about building clean user interfaces and high-performance applications. Coffee lover and open-source contributor.');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const [avatar, setAvatar] = useState('https://api.dicebear.com/7.x/avataaars/svg?seed=Guest');
+  const [joinedDate, setJoinedDate] = useState('');
+  const [friendsCount, setFriendsCount] = useState(0);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'saved', 'error'
+
+  useEffect(() => {
+    if (user) {
+      fetchWithAuth(`/api/users/${user.id || user._id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.user) {
+            setUsername(data.user.username || '');
+            setEmail(data.user.email || '');
+            setBio(data.user.bio || '');
+            setIsPublic(data.user.isPublic !== false);
+            if (data.user.avatar) setAvatar(data.user.avatar);
+            setFriendsCount(data.user.friends ? data.user.friends.length : 0);
+            
+            if (data.user.createdAt) {
+              const date = new Date(data.user.createdAt);
+              setJoinedDate(`Joined ${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`);
+            }
+          }
+        })
+        .catch(console.error);
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveStatus('saving');
+    try {
+      const res = await fetchWithAuth(`/api/users/${user.id || user._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, bio, isPublic })
+      });
+      if (res.ok) {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus(null), 3000);
+      } else {
+        setSaveStatus('error');
+      }
+    } catch {
+      setSaveStatus('error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#13111C] text-white font-display overflow-x-hidden flex flex-col">
@@ -41,8 +95,8 @@ export default function SettingsPage() {
           <button className="size-9 rounded-full bg-[#1E1B31] flex items-center justify-center text-[#9CA3AF] hover:text-white transition-colors">
             <span className="material-symbols-outlined text-[18px]">notifications</span>
           </button>
-          <div className="size-9 rounded-full bg-[#6344F5] flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-[#6344F5]/20 cursor-pointer border-2 border-[#13111C]">
-            AJ
+          <div className="size-9 rounded-full bg-[#6344F5] flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-[#6344F5]/20 cursor-pointer border-2 border-[#13111C] overflow-hidden">
+            {avatar ? <img src={avatar} alt="Profile" className="w-full h-full object-cover"/> : username.charAt(0).toUpperCase()}
           </div>
         </div>
       </header>
@@ -55,22 +109,22 @@ export default function SettingsPage() {
           <div className="bg-[#1A1829] border border-[#2A273F] rounded-2xl overflow-hidden shadow-2xl">
             <div className="h-32 bg-[#6344F5] relative">
               <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 size-24 rounded-full border-4 border-[#1A1829] bg-[#FFD1B3] overflow-hidden">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&skinColor=f8d25c&top=shortHairShortFlat&facialHair=blank" alt="Avatar" className="w-full h-full object-cover scale-125 translate-y-2"/>
+                <img src={avatar} alt="Avatar" className="w-full h-full object-cover scale-125 translate-y-2"/>
               </div>
             </div>
             
             <div className="pt-14 pb-8 px-6 text-center">
-              <h2 className="text-xl font-bold mb-1">Alex Johnson</h2>
-              <p className="text-sm text-[#645F7C] mb-4">alex.j@nebula.io</p>
+              <h2 className="text-xl font-bold mb-1">{username}</h2>
+              <p className="text-sm text-[#645F7C] mb-4">{email}</p>
               
               <div className="flex items-center justify-center gap-2 text-xs text-[#9CA3AF] mb-6">
                 <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                Joined January 2023
+                {joinedDate || 'Member'}
               </div>
 
               <div className="flex items-center gap-3 mb-8">
                 <div className="flex-1 bg-[#13111C] p-3 rounded-xl border border-[#2A273F]">
-                  <p className="text-xl font-black text-[#6344F5] mb-1">1,284</p>
+                  <p className="text-xl font-black text-[#6344F5] mb-1">{friendsCount}</p>
                   <p className="text-[9px] font-bold text-[#645F7C] tracking-widest uppercase">Friends</p>
                 </div>
                 <div className="flex-1 bg-[#13111C] p-3 rounded-xl border border-[#2A273F]">
@@ -104,10 +158,18 @@ export default function SettingsPage() {
                 <h2 className="text-2xl font-bold mb-2">Edit Profile</h2>
                 <p className="text-[#9CA3AF] text-sm">Update your personal information and bio</p>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20">
-                <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                <span className="text-xs font-bold">Saved</span>
-              </div>
+              {saveStatus === 'saved' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20">
+                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                  <span className="text-xs font-bold">Saved</span>
+                </div>
+              )}
+              {saveStatus === 'error' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">
+                  <span className="material-symbols-outlined text-[16px]">error</span>
+                  <span className="text-xs font-bold">Error saving</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-6 mb-10">
@@ -178,9 +240,15 @@ export default function SettingsPage() {
               <button className="px-6 py-2.5 rounded-xl text-sm font-bold text-[#9CA3AF] hover:text-white transition-colors">
                 Cancel
               </button>
-              <button className="flex items-center gap-2 px-6 py-2.5 bg-[#6344F5] hover:brightness-110 text-white rounded-xl text-sm font-bold shadow-lg shadow-[#6344F5]/20 transition-all active:scale-95">
-                <span className="material-symbols-outlined text-[18px]">save</span>
-                Save Changes
+              <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-6 py-2.5 bg-[#6344F5] hover:brightness-110 text-white rounded-xl text-sm font-bold shadow-lg shadow-[#6344F5]/20 transition-all active:scale-95 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {isSaving ? 'sync' : 'save'}
+                </span>
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>
