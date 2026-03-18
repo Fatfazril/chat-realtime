@@ -10,6 +10,9 @@ import ProfilePage from './pages/ProfilePage'
 import InvitePage from './pages/InvitePage'
 import ProtectedRoute from './components/ProtectedRoute'
 import DashboardPage from './pages/DashboardPage'
+import DiscoverPage from './pages/DiscoverPage'
+import FriendsPage from './pages/FriendsPage'
+import SettingsPage from './pages/SettingsPage'
 
 function App() {
   return (
@@ -29,6 +32,11 @@ function App() {
 
           {/* Invite Handler */}
           <Route path="/invite/:token" element={<InvitePage />} />
+          
+          {/* New UI Routes */}
+          <Route path="/discover" element={<DiscoverPage />} />
+          <Route path="/friends" element={<FriendsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
 
           {/* All other pages use the AppLayout with sidebar nav */}
           <Route element={<AppLayout />}>
