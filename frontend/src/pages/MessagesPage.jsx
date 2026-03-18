@@ -29,7 +29,7 @@ function MessagesPage() {
     fetchMyRooms();
     fetchWithAuth('/api/users/online')
       .then(r => r.json())
-      .then(data => setOnlineUsers(data.onlineUsers ? data.onlineUsers.map(u => u._id) : []))
+      .then(data => setOnlineUsers((data.users || data.onlineUsers || []).map(u => u._id)))
       .catch(console.error);
   }, []);
 
@@ -44,56 +44,65 @@ function MessagesPage() {
     fetchWithAuth(`/api/rooms/${activeRoomId}/messages`)
       .then(r => r.json())
       .then(data => {
-        // Map backend format to component expectations
-        const formattedMsgs = (data.messages || []).reverse().map(m => ({
-          id: m._id,
+        // Backend already returns messages in chronological order — do NOT reverse again
+        const currentUserId = String(user?._id || user?.id);
+        const formattedMsgs = (data.messages || []).map(m => ({
+          id: String(m._id),
           text: m.message,
           time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isOwn: String(m.sender?._id || m.sender?.id || m.sender) === String(user?._id || user?.id),
-          read: true, // Assuming read for now
+          isOwn: String(m.sender?._id || m.sender?.id || m.sender) === currentUserId,
+          read: true,
           sender: m.sender
         }));
         setMessages(formattedMsgs);
       })
       .catch(console.error);
-      
+
   }, [activeRoomId, user?._id, user?.id]);
 
   // Socket setup
   useEffect(() => {
     if (!socket || !activeRoomId) return;
 
+    const currentUserId = String(user?._id || user?.id);
+
     socket.emit('room:join', { roomId: activeRoomId });
 
     const handleNewMessage = (msg) => {
-      if (msg.room === activeRoomId) {
-        setMessages(prev => {
-          if (prev.some(m => m.id === msg._id)) return prev;
-          return [...prev, {
-            id: msg._id,
-            text: msg.message,
-            time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isOwn: String(msg.sender?._id || msg.sender?.id || msg.sender) === String(user?._id || user?.id),
-            read: true,
-            sender: msg.sender
-          }];
-        });
-        socket.emit('message:read', { roomId: activeRoomId, messageIds: [msg._id] });
-      }
+      if (String(msg.room) !== String(activeRoomId)) return;
+
+      const msgId = String(msg._id);
+      setMessages(prev => {
+        // Dedup: check if this message already exists (string comparison)
+        if (prev.some(m => String(m.id) === msgId)) return prev;
+        return [...prev, {
+          id: msgId,
+          text: msg.message,
+          time: new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isOwn: String(msg.sender?._id || msg.sender?.id || msg.sender) === currentUserId,
+          read: true,
+          sender: msg.sender
+        }];
+      });
     };
 
+    // Listen to both events — message:sent is the ACK for the sender,
+    // message:receive is the Redis broadcast for all room members.
+    // The dedup above prevents showing the message twice.
     socket.on('message:receive', handleNewMessage);
     socket.on('message:sent', handleNewMessage);
-    
+
     socket.on('message:update', (data) => {
-      if (data.room === activeRoomId) {
-        setMessages(prev => prev.map(m => m.id === data._id ? { ...m, text: data.message, edited: true } : m));
+      if (String(data.room) === String(activeRoomId)) {
+        const updId = String(data._id);
+        setMessages(prev => prev.map(m => String(m.id) === updId ? { ...m, text: data.message, edited: true } : m));
       }
     });
 
     socket.on('message:delete', (data) => {
-      if (data.room === activeRoomId) {
-        setMessages(prev => prev.filter(m => m.id !== data._id));
+      if (String(data.room) === String(activeRoomId)) {
+        const delId = String(data._id);
+        setMessages(prev => prev.filter(m => String(m.id) !== delId));
       }
     });
 
@@ -136,9 +145,8 @@ function MessagesPage() {
     }
   };
 
-  // Convert rooms to Sidebar contacts prop format
+  // Convert rooms to Sidebar contacts prop format — add isDirect flag for sectioning
   const contactsList = rooms.map(r => {
-    // For DMs, show the other user
     if (r.isDirect) {
       const friend = r.members?.find(m => m._id !== user?._id) || r.members?.[0];
       return {
@@ -146,12 +154,12 @@ function MessagesPage() {
         name: friend?.username || 'Unknown',
         avatar: friend?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend?.username}`,
         time: '',
-        lastMessage: r.name || 'Direct Message', // Just a placeholder for last message text
+        lastMessage: r.name || 'Direct Message',
         isOnline: friend ? onlineUsers.includes(friend._id) : false,
-        isTyping: false
+        isTyping: false,
+        isDirect: true
       };
     }
-    // For normal rooms
     return {
       id: r._id,
       name: r.name,
@@ -159,11 +167,51 @@ function MessagesPage() {
       time: '',
       lastMessage: `${r.memberCount || r.members?.length || 0} members`,
       isOnline: false,
-      isTyping: false
+      isTyping: false,
+      isDirect: false
     };
   });
 
+  // Split into DMs and Rooms
+  const directMessages = contactsList.filter(c => c.isDirect);
+  const groupRooms = contactsList.filter(c => !c.isDirect);
+
   const activeContact = contactsList.find(c => c.id === activeRoomId) || null;
+
+  // Render a single contact row
+  const renderContactRow = (contact) => (
+    <div
+      key={contact.id}
+      onClick={() => setSearchParams({ roomId: contact.id })}
+      className={`flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer group ${activeRoomId === contact.id ? 'bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20 shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-primary/5 border border-transparent'}`}
+    >
+      <div className="relative shrink-0">
+        {contact.isDirect ? (
+          /* DM: Round avatar */
+          <img alt={contact.name} className="size-11 rounded-full object-cover bg-slate-200 dark:bg-[#202c33]" src={contact.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${contact.id}`} />
+        ) : (
+          /* Room: Rounded-square avatar with gradient fallback */
+          <div className="size-11 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10 flex items-center justify-center overflow-hidden">
+            {contact.avatar ? (
+              <img alt={contact.name} className="size-full object-cover" src={contact.avatar} />
+            ) : (
+              <span className="material-symbols-outlined text-primary text-xl">tag</span>
+            )}
+          </div>
+        )}
+        {contact.isDirect && contact.isOnline && (
+          <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-white dark:border-[#111b21] rounded-full"></span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start">
+          <h4 className="font-semibold text-sm truncate">{contact.name}</h4>
+          <span className="text-[10px] text-slate-400 shrink-0 ml-2">{contact.time || ''}</span>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{contact.lastMessage}</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex h-screen w-full overflow-hidden text-slate-900 dark:text-slate-100 bg-background-light dark:bg-[#0b141a] font-display">
@@ -214,27 +262,57 @@ function MessagesPage() {
             <input className="w-full bg-white dark:bg-[#0b141a] border border-slate-200 dark:border-[#202c33] rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-slate-400 outline-none text-slate-900 dark:text-slate-100" placeholder="Search conversations..." type="text" />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-1">
-          {contactsList.map(contact => (
-            <div 
-              key={contact.id} 
-              onClick={() => setSearchParams({ roomId: contact.id })}
-              className={`flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer group ${activeRoomId === contact.id ? 'bg-white dark:bg-primary/10 border border-slate-200 dark:border-primary/20' : 'hover:bg-slate-100 dark:hover:bg-primary/5 border border-transparent'}`}
-            >
-              <div className="relative shrink-0">
-                <img alt="User" className="size-12 rounded-full object-cover bg-slate-200" src={contact.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${contact.id}`} />
-                {contact.isOnline && <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-white dark:border-[#111b21] rounded-full"></span>}
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3">
+          {/* ── Direct Messages Section ── */}
+          {directMessages.length > 0 && (
+            <div className="mb-2">
+              <div className="flex items-center gap-2 px-3 py-2">
+                <span className="material-symbols-outlined text-primary text-base">person</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Direct Messages</span>
+                <span className="ml-auto text-[10px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded">{directMessages.length}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start">
-                  <h4 className="font-semibold text-sm truncate">{contact.name}</h4>
-                  <span className="text-[10px] text-slate-400">{contact.time || '12:00'}</span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{contact.lastMessage}</p>
+              <div className="space-y-0.5">
+                {directMessages.map(renderContactRow)}
               </div>
             </div>
-          ))}
+          )}
+
+          {/* ── Divider ── */}
+          {directMessages.length > 0 && groupRooms.length > 0 && (
+            <div className="flex items-center gap-3 px-3 my-3">
+              <div className="flex-1 h-px bg-slate-200 dark:bg-[#202c33]"></div>
+              <span className="material-symbols-outlined text-[14px] text-slate-300 dark:text-[#3b4a54]">more_horiz</span>
+              <div className="flex-1 h-px bg-slate-200 dark:bg-[#202c33]"></div>
+            </div>
+          )}
+
+          {/* ── Rooms Section ── */}
+          {groupRooms.length > 0 && (
+            <div className="mb-2">
+              <div className="flex items-center gap-2 px-3 py-2">
+                <span className="material-symbols-outlined text-emerald-500 text-base">tag</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Rooms</span>
+                <span className="ml-auto text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded">{groupRooms.length}</span>
+              </div>
+              <div className="space-y-0.5">
+                {groupRooms.map(renderContactRow)}
+              </div>
+            </div>
+          )}
+
+          {/* ── Empty State ── */}
+          {contactsList.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+              <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined text-primary text-3xl">chat_bubble</span>
+              </div>
+              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">No conversations yet</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Start a chat or join a room to get started.</p>
+            </div>
+          )}
         </div>
+
         <div className="p-4 border-t border-slate-200 dark:border-[#202c33]">
           <button className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
             <span className="material-symbols-outlined text-lg">archive</span>

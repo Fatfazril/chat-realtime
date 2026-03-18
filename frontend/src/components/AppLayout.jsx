@@ -125,7 +125,6 @@ function AppLayout() {
           </div>
           <div>
             <h2 className="text-xl font-black tracking-widest text-white leading-tight">ChatApp</h2>
-            <p className="text-[9px] text-primary font-bold tracking-[0.2em] uppercase">Real-Time Admin</p>
           </div>
         </div>
 
