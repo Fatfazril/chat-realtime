@@ -14,6 +14,8 @@ import DiscoverPage from './pages/DiscoverPage'
 import FriendsPage from './pages/FriendsPage'
 import SettingsPage from './pages/SettingsPage'
 import RoomHubPage from './pages/RoomHubPage'
+import RoomManagerPage from './pages/RoomManagerPage'
+import RoomChatPage from './pages/RoomChatPage'
 
 function App() {
   return (
@@ -39,6 +41,8 @@ function App() {
           <Route path="/friends" element={<FriendsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/roomhub" element={<RoomHubPage />} />
+          <Route path="/room-manager" element={<RoomManagerPage />} />
+          <Route path="/room-chat" element={<RoomChatPage />} />
 
           {/* All other pages use the AppLayout with sidebar nav */}
           <Route element={<AppLayout />}>
