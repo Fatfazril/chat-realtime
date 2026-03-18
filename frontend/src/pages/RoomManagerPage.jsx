@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { fetchWithAuth } from '../utils/api';
 
 export default function RoomManagerPage() {
   const navigate = useNavigate();
@@ -8,6 +9,82 @@ export default function RoomManagerPage() {
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   const [inviteToken, setInviteToken] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [error, setError] = useState(null);
+  const [recentRooms, setRecentRooms] = useState([]);
+
+  // Fetch user's recent rooms
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetchWithAuth('/api/rooms/me');
+        if (res.ok) {
+          const data = await res.json();
+          setRecentRooms((data.rooms || []).filter(r => !r.isDirect).slice(0, 6));
+        }
+      } catch (e) {
+        console.error('Failed to fetch rooms:', e);
+      }
+    })();
+  }, []);
+
+  const handleCreateRoom = async () => {
+    if (!roomName.trim()) return;
+    setIsCreating(true);
+    setError(null);
+
+    try {
+      const res = await fetchWithAuth('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: roomName.trim(), description: description.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.errors?.[0] || 'Failed to create room');
+
+      // Room created — creator is automatically joined as owner + admin by backend
+      // Navigate to the room management page
+      navigate(`/room-management/${data.room._id}`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleJoinRoom = async () => {
+    if (!inviteToken.trim()) return;
+    setIsJoining(true);
+    setError(null);
+
+    try {
+      const res = await fetchWithAuth(`/api/rooms/join/${inviteToken.trim()}`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to join room');
+
+      // Navigate to the room management page or messages
+      const roomId = data.room?._id || data.room?.id;
+      if (roomId) {
+        navigate(`/room-management/${roomId}`);
+      } else {
+        navigate('/rooms');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const roomColors = [
+    { bg: 'bg-[#6344F5]/10', text: 'text-[#6344F5]', hoverBg: 'group-hover:bg-[#6344F5]/20', icon: 'groups' },
+    { bg: 'bg-[#10B981]/10', text: 'text-[#10B981]', hoverBg: 'group-hover:bg-[#10B981]/20', icon: 'palette' },
+    { bg: 'bg-[#F59E0B]/10', text: 'text-[#F59E0B]', hoverBg: 'group-hover:bg-[#F59E0B]/20', icon: 'science' },
+    { bg: 'bg-[#EF4444]/10', text: 'text-[#EF4444]', hoverBg: 'group-hover:bg-[#EF4444]/20', icon: 'sports_esports' },
+    { bg: 'bg-[#8B5CF6]/10', text: 'text-[#8B5CF6]', hoverBg: 'group-hover:bg-[#8B5CF6]/20', icon: 'terminal' },
+    { bg: 'bg-[#EC4899]/10', text: 'text-[#EC4899]', hoverBg: 'group-hover:bg-[#EC4899]/20', icon: 'forum' },
+  ];
 
   return (
     <div className="min-h-screen bg-[#13111C] text-white font-display flex items-center justify-center p-4">
@@ -31,7 +108,7 @@ export default function RoomManagerPage() {
             {['Create Room', 'Join via Link'].map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => { setActiveTab(tab); setError(null); }}
                 className={`pb-3 text-sm font-semibold transition-colors relative ${
                   activeTab === tab ? 'text-white' : 'text-[#645F7C] hover:text-[#9CA3AF]'
                 }`}
@@ -44,6 +121,14 @@ export default function RoomManagerPage() {
             ))}
           </div>
         </div>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="flex items-center gap-3 bg-red-500/10 text-red-400 p-4 rounded-xl border border-red-500/20 text-sm font-medium">
+            <span className="material-symbols-outlined text-[18px] shrink-0">error</span>
+            {error}
+          </div>
+        )}
 
         {/* Main Panels */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -90,8 +175,12 @@ export default function RoomManagerPage() {
               </div>
             </div>
 
-            <button className="w-full mt-6 bg-[#6344F5] hover:brightness-110 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-[#6344F5]/20 active:scale-[0.98]">
-              Create Room
+            <button 
+              onClick={handleCreateRoom}
+              disabled={isCreating || !roomName.trim()}
+              className="w-full mt-6 bg-[#6344F5] hover:brightness-110 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-[#6344F5]/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCreating ? 'Creating...' : 'Create Room'}
             </button>
           </div>
 
@@ -124,11 +213,15 @@ export default function RoomManagerPage() {
             </div>
 
             <div className="mt-auto space-y-4">
-               <button className="w-full bg-[#6344F5] hover:brightness-110 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-[#6344F5]/20 active:scale-[0.98]">
-                Join Room
+               <button 
+                onClick={handleJoinRoom}
+                disabled={isJoining || !inviteToken.trim()}
+                className="w-full bg-[#6344F5] hover:brightness-110 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-[#6344F5]/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isJoining ? 'Joining...' : 'Join Room'}
               </button>
               <p className="text-center text-xs text-[#645F7C] font-semibold">
-                Don't have a code? <Link to="/discover" className="text-[#6344F5] hover:underline">Browse public rooms</Link>
+                Don't have a code? <Link to="/roomhub" className="text-[#6344F5] hover:underline">Browse public rooms</Link>
               </p>
             </div>
           </div>
@@ -136,32 +229,27 @@ export default function RoomManagerPage() {
         </div>
 
         {/* Recent Rooms */}
-        <div className="mt-4">
-          <h3 className="text-lg font-bold mb-4">Your Recent Rooms</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            
-            <Link to="/messages" className="bg-[#1A1829] border border-[#2A273F] rounded-xl p-4 flex items-center gap-4 hover:border-[#3B3654] transition-colors group">
-              <div className="size-10 rounded-lg bg-[#6344F5]/10 flex items-center justify-center shrink-0 group-hover:bg-[#6344F5]/20 transition-colors">
-                <span className="material-symbols-outlined text-[#6344F5] text-[20px]">groups</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-white mb-0.5 group-hover:text-[#6344F5] transition-colors">Engineering HQ</h4>
-                <p className="text-xs text-[#645F7C]">12 members active</p>
-              </div>
-            </Link>
-
-            <Link to="/messages" className="bg-[#1A1829] border border-[#2A273F] rounded-xl p-4 flex items-center gap-4 hover:border-[#3B3654] transition-colors group">
-              <div className="size-10 rounded-lg bg-[#10B981]/10 flex items-center justify-center shrink-0 group-hover:bg-[#10B981]/20 transition-colors">
-                <span className="material-symbols-outlined text-[#10B981] text-[20px]">palette</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-white mb-0.5 group-hover:text-[#10B981] transition-colors">Design Critique</h4>
-                <p className="text-xs text-[#645F7C]">4 members active</p>
-              </div>
-            </Link>
-
+        {recentRooms.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-lg font-bold mb-4">Your Recent Rooms</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentRooms.map((room, i) => {
+                const color = roomColors[i % roomColors.length];
+                return (
+                  <Link to={`/room-management/${room._id}`} key={room._id} className="bg-[#1A1829] border border-[#2A273F] rounded-xl p-4 flex items-center gap-4 hover:border-[#3B3654] transition-colors group">
+                    <div className={`size-10 rounded-lg ${color.bg} flex items-center justify-center shrink-0 ${color.hoverBg} transition-colors`}>
+                      <span className={`material-symbols-outlined ${color.text} text-[20px]`}>{color.icon}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className={`font-bold text-sm text-white mb-0.5 truncate ${color.text.replace('text-', 'group-hover:text-')} transition-colors`}>{room.name}</h4>
+                      <p className="text-xs text-[#645F7C]">{room.memberCount || room.members?.length || 0} members</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>
