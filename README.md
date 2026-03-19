@@ -36,6 +36,24 @@ The core workspace experience featuring floating sidebars, direct messages, room
 
 ![Messages Page](docs/messages-page.png)
 
+### Workspace Channel View
+A fully featured channel messaging experience with member presence indicators and team activity panel — channels, direct messages, and live typing all in one place.
+> *To view: Login and navigate to a room/channel.*
+
+![Workspace Page](docs/workspace-page.png)
+
+### Admin Dashboard
+A rich overview page showing workspace stats — rooms joined, messages sent, active contacts, and a workspace activity chart — with live system status indicators.
+> *To view: Login as admin and navigate to the dashboard.*
+
+![Dashboard Page](docs/dashboard-page.png)
+
+### Messages Inbox
+A unified inbox for all direct messages, group conversations, and mentions — with unread counts, timestamps, and filter tabs (All, Unread, Mentions, Drafts).
+> *To view: Navigate to the Messages section in the sidebar.*
+
+![Inbox Page](docs/inbox-page.png)
+
 ### Rooms Directory
 Discover and join public or private communities using a clean, interactive grid layout filtering active conversations.
 > *To view: Navigate to `http://localhost:5173/rooms`*
@@ -125,6 +143,8 @@ The frontend will be available at `http://localhost:5173` (or port 5174 based on
 ### Swagger UI
 The backend is internally documented with Swagger. Once the backend server is running (`npm run dev`), simply visit:
 **👉 `http://localhost:3400/api-docs`**
+
+![API Documentation](docs/api-docs.png)
 
 ### Postman Collection
 A pre-configured Postman Collection is available in the repository which includes requests and sample payloads for all major endpoints.
