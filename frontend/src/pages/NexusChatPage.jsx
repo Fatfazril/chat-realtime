@@ -3,6 +3,7 @@ import { NavLink, useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchWithAuth } from '../utils/api';
+import ProfileModal from '../components/ProfileModal';
 
 const navClasses = ({ isActive }) =>
   `p-2 rounded-lg transition-colors ${
@@ -380,7 +381,8 @@ const NexusChatArea = ({ currentRoom, messages, onSendMessage, onEditMessage, on
   </main>
   );
 };
-const NexusMembersSidebar = ({ currentRoom, onlineUsers, currentUser, onRefreshRoom }) => {
+
+const NexusMembersSidebar = ({ currentRoom, onlineUsers, currentUser, onRefreshRoom, onSelectMember }) => {
   if (!currentRoom || currentRoom.isDirect) return <aside className="w-72 hidden xl:flex flex-col border-l border-slate-200 dark:border-[#202c33] bg-[#ffffff] dark:bg-[#111b21]"></aside>;
   
   const members = currentRoom.members || [];
@@ -432,12 +434,12 @@ const NexusMembersSidebar = ({ currentRoom, onlineUsers, currentUser, onRefreshR
       return (
         <div key={user._id} className={`flex items-center justify-between group ${isOffline ? 'opacity-60' : ''}`}>
             <div className="flex items-center gap-3">
-            <div className={`relative size-10 shrink-0 ${isOffline ? 'grayscale' : ''}`}>
+            <div className={`relative size-10 shrink-0 cursor-pointer ${isOffline ? 'grayscale hover:grayscale-0' : ''}`} onClick={() => onSelectMember(user._id)}>
                 <img className="size-10 rounded-full object-cover bg-primary/20" alt={user.username} src={user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
                 {!isOffline && <span className="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-slate-50 dark:border-background-dark rounded-full"></span>}
             </div>
             <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-bold truncate flex items-center gap-1">
+                <span className="text-sm font-bold truncate flex items-center gap-1 cursor-pointer hover:text-primary transition-colors" onClick={() => onSelectMember(user._id)}>
                     {user.username} 
                     {isTargetOwner && <span className="material-symbols-outlined text-[12px] text-yellow-500" title="Owner">star</span>}
                     {isTargetAdmin && !isTargetOwner && <span className="material-symbols-outlined text-[12px] text-blue-500" title="Admin">shield</span>}
@@ -494,6 +496,12 @@ export default function NexusChatPage() {
   const [messages, setMessages] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
+  // Profile & Friends State
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const [friendIds, setFriendIds] = useState([]);
+  // eslint-disable-next-line no-unused-vars
+  const [pendingRequests, setPendingRequests] = useState([]);
+
   // Fetch all rooms for sidebar
   const fetchMyRooms = () => {
     fetchWithAuth('/api/rooms/me')
@@ -508,6 +516,14 @@ export default function NexusChatPage() {
     fetchWithAuth('/api/users/online')
       .then(r => r.json())
       .then(data => setOnlineUsers(data.onlineUsers ? data.onlineUsers.map(u => u._id) : []))
+      .catch(console.error);
+
+    fetchWithAuth('/api/users/friends')
+      .then(r => r.json())
+      .then(data => {
+        if (data.friends) setFriendIds(data.friends.map(f => f._id || f));
+        if (data.friendRequests) setPendingRequests(data.friendRequests);
+      })
       .catch(console.error);
   }, []);
 
@@ -608,8 +624,34 @@ export default function NexusChatPage() {
     }
   };
 
+  const handleAddFriend = async (targetUserId) => {
+    try {
+      const res = await fetchWithAuth('/api/users/friends/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Friend request sent!');
+        setPendingRequests(prev => [...prev, { user: targetUserId, status: 'pending' }]);
+      } else {
+        alert(data.error || 'Failed to send request');
+      }
+    } catch {
+      alert('Failed to send friend request');
+    }
+  };
+
   return (
     <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display h-screen flex overflow-hidden">
+      <ProfileModal 
+        memberId={selectedMemberId} 
+        onClose={() => setSelectedMemberId(null)} 
+        currentUserId={user?._id || user?.id} 
+        friendIds={friendIds} 
+        onFriendAction={(id) => { handleAddFriend(id); setSelectedMemberId(null); }} 
+      />
       <NexusSidebar onLogout={logout} />
       <NexusRoomSidebar 
         rooms={rooms} 
@@ -634,6 +676,7 @@ export default function NexusChatPage() {
         onlineUsers={onlineUsers} 
         currentUser={user}
         onRefreshRoom={fetchCurrentRoomDetails}
+        onSelectMember={(id) => setSelectedMemberId(id)}
       />
     </div>
   );

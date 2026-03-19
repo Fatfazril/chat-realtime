@@ -6,7 +6,7 @@ import { fetchWithAuth } from '../utils/api'
 const navItems = [
   { to: '/dashboard', icon: 'grid_view', label: 'Dashboard' },
   { to: '/messages', icon: 'chat_bubble', label: 'Messages', badge: 12 },
-  { to: '/rooms', icon: 'group', label: 'Rooms' },
+  { to: '/rooms', icon: 'group', label: 'Rooms' , badge: 5},
   { to: '/contacts', icon: 'perm_contact_calendar', label: 'Contacts' },
   { to: '/analytics', icon: 'bar_chart', label: 'Analytics' },
 ]
